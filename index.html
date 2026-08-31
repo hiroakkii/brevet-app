@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ブルベ・タイムキーパー</title>
+<meta name="theme-color" content="#0F1A24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ブルベ">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230F1A24'/><circle cx='16' cy='16' r='9' fill='none' stroke='%23FFB020' stroke-width='2.5'/><path d='M16 10.5V16l4 2.5' stroke='%23FFB020' stroke-width='2.5' stroke-linecap='round' fill='none'/></svg>">
+<style>
+:root{
+  --bg:#0F1A24;
+  --panel:#16232F;
+  --panel-2:#1B2C3A;
+  --line:#24394A;
+  --line-soft:#1E303E;
+  --fg:#E8EFF4;
+  --fg-dim:#93A8B8;
+  --fg-faint:#63798A;
+  --amber:#FFB020;
+  --amber-deep:#C97F06;
+  --red:#FF6B5E;
+  --cyan:#63C4D6;
+  --green:#6ED39A;
+  --num:ui-monospace,"SF Mono","Roboto Mono","DejaVu Sans Mono",Menlo,monospace;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--bg);min-height:100%;}
+body{
+  color:var(--fg);
+  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Noto Sans JP",system-ui,-apple-system,sans-serif;
+  font-size:15px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%;
+  padding:0 0 calc(40px + var(--safe-b));
+  overscroll-behavior-y:none;
+}
+.wrap{max-width:940px;margin:0 auto;padding:0 calc(16px + var(--safe-l)) 0 calc(16px + var(--safe-r));}
+
+/* ヘッダ */
+.head{padding:calc(20px + var(--safe-t)) 0 14px;}
+.title{font-size:19px;font-weight:700;letter-spacing:.04em;margin:0;}
+.sub{color:var(--fg-faint);font-size:12px;margin:3px 0 0;}
+
+/* コックピット（スクロール時も残す） */
+.cockpit-slot{position:sticky;top:0;z-index:20;padding-top:var(--safe-t);
+  background:linear-gradient(180deg,var(--bg) 78%,rgba(15,26,36,0));padding-bottom:10px;}
+.cockpit{
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--line);border-radius:8px;padding:16px 18px 14px;
+}
+.cockpit-grid{display:flex;flex-wrap:wrap;gap:18px 36px;align-items:flex-end;}
+.bank{flex:0 0 auto;min-width:0;}
+.bank-label{font-size:12px;color:var(--fg-dim);margin-bottom:1px;}
+.bank-num{font-family:var(--num);font-size:56px;line-height:.95;font-weight:600;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+.pos{color:var(--amber);} .neg{color:var(--red);} .idle{color:var(--fg-faint);}
+.bank-note{font-size:11px;color:var(--fg-faint);margin-top:5px;}
+.next{flex:1 1 250px;min-width:200px;}
+.next-name{font-size:14px;font-weight:600;margin-bottom:6px;}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:2px 0;
+  border-bottom:1px dotted var(--line-soft);}
+.kv:last-child{border-bottom:none;}
+.kv .k{color:var(--fg-dim);}
+.kv .v{font-family:var(--num);font-variant-numeric:tabular-nums;}
+.sm{color:var(--fg-faint);font-size:11px;margin-left:5px;}
+
+.bar{height:5px;background:var(--line-soft);border-radius:3px;margin-top:14px;position:relative;overflow:hidden;}
+.bar-fill{height:100%;background:var(--amber-deep);width:0;}
+.bar-mark{position:absolute;top:-3px;width:2px;height:11px;background:var(--cyan);}
+.bar-cap{display:flex;justify-content:space-between;font-size:11px;color:var(--fg-faint);
+  margin-top:5px;font-family:var(--num);gap:10px;}
+
+/* パネル */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin-bottom:14px;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 16px;cursor:pointer;user-select:none;min-height:52px;}
+.panel-head h2{font-size:14px;font-weight:600;margin:0;}
+.panel-head .hint{font-size:12px;color:var(--fg-faint);font-weight:400;
+  display:inline-block;max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  vertical-align:bottom;}
+.chev{color:var(--fg-faint);font-size:12px;flex:0 0 auto;}
+.panel-body{padding:2px 16px 16px;border-top:1px solid var(--line-soft);}
+.panel-body[hidden]{display:none;}
+
+/* フォーム */
+.field{margin:14px 0;}
+.label{display:block;font-size:13px;color:var(--fg-dim);margin-bottom:5px;}
+.row{display:flex;flex-wrap:wrap;gap:14px 20px;}
+.row > .field{flex:1 1 210px;margin:0;}
+input,select,button{font-family:inherit;}
+input.in,select.in{
+  width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);
+  border-radius:6px;padding:10px 11px;
+  font-size:16px; /* iOSのフォーカス時ズーム防止 */
+  font-family:var(--num);font-variant-numeric:tabular-nums;
+  min-height:44px;
+}
+select.in{font-family:inherit;}
+.in:focus{outline:2px solid var(--cyan);outline-offset:1px;border-color:var(--cyan);}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+.seg button{background:transparent;color:var(--fg-dim);border:none;padding:11px 16px;
+  font-size:14px;cursor:pointer;min-height:44px;}
+.seg button + button{border-left:1px solid var(--line);}
+.seg button[aria-pressed="true"]{background:var(--amber);color:#231604;font-weight:600;}
+.btn{background:var(--panel-2);color:var(--fg);border:1px solid var(--line);border-radius:6px;
+  padding:11px 16px;font-size:14px;cursor:pointer;min-height:44px;}
+.btn:active{background:var(--line-soft);}
+.btn-primary{background:var(--amber);color:#231604;border-color:var(--amber);font-weight:600;}
+.btn-sm{padding:8px 12px;font-size:13px;min-height:38px;}
+.btn-link{background:none;border:none;color:var(--cyan);cursor:pointer;font-size:13px;
+  padding:6px 4px;min-height:32px;}
+.check{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--fg-dim);
+  cursor:pointer;min-height:44px;}
+.check input{accent-color:var(--amber);width:20px;height:20px;}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
+
+/* ドロップ／読み込み */
+.drop{border:1px dashed var(--line);border-radius:8px;padding:22px 16px;text-align:center;
+  background:var(--panel);transition:border-color .15s,background .15s;}
+.drop.over{border-color:var(--amber);background:var(--panel-2);}
+.drop p{margin:0 0 12px;color:var(--fg-dim);font-size:14px;}
+.drop-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+
+/* コントロール一覧 */
+.ctrl{display:grid;grid-template-columns:38px 1fr auto;gap:0 12px;padding:14px 16px;
+  border-top:1px solid var(--line-soft);align-items:start;}
+.ctrl:first-child{border-top:none;}
+.ctrl.done{background:rgba(110,211,154,.05);}
+.ctrl.off{opacity:.42;}
+.seq{font-family:var(--num);font-size:13px;color:var(--fg-faint);padding-top:2px;
+  font-variant-numeric:tabular-nums;}
+.ctrl-main{min-width:0;}
+.ctrl-name{font-size:15px;font-weight:600;margin-bottom:2px;word-break:break-word;}
+.ctrl-meta{font-size:12px;color:var(--fg-faint);margin-bottom:8px;word-break:break-word;}
+.times{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;}
+.time{display:flex;gap:7px;align-items:baseline;}
+.time b{font-family:var(--num);font-weight:600;font-variant-numeric:tabular-nums;}
+.time i{font-style:normal;color:var(--fg-dim);font-size:12px;}
+.ctrl-side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+.margin{font-family:var(--num);font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;}
+.margin-tag{font-size:11px;color:var(--fg-faint);}
+.edit-line{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.edit-line .label{margin:0;font-size:12px;}
+.edit-line input{width:auto;}
+.edit-line input.km{width:104px;}
+.edit-line input.dt{min-width:210px;}
+.day-tag{font-size:12px;color:var(--fg-faint);}
+.inline-warn{font-size:12px;color:var(--red);}
+
+.warn{background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.3);color:#F2CE8A;
+  border-radius:6px;padding:11px 13px;font-size:13px;margin:13px 0;}
+.warn.info{background:rgba(99,196,214,.07);border-color:rgba(99,196,214,.28);color:#A8DCE6;}
+.err{background:rgba(255,107,94,.09);border:1px solid rgba(255,107,94,.35);color:#FFB3AB;
+  border-radius:6px;padding:11px 13px;font-size:13px;margin:13px 0;}
+.note{font-size:12px;color:var(--fg-faint);margin-top:10px;}
+.empty{padding:30px 16px;text-align:center;color:var(--fg-faint);font-size:14px;}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line-soft);}
+
+/* フッタ */
+.foot{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);}
+.save{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg-faint);}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--fg-faint);flex:0 0 auto;}
+.dot.saved{background:var(--green);} .dot.saving{background:var(--amber);} .dot.error{background:var(--red);}
+
+@media (max-width:620px){
+  .wrap{padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r));}
+  .bank-num{font-size:clamp(40px,13vw,56px);}
+  .cockpit{padding:14px 14px 12px;}
+  .cockpit-grid{gap:14px 20px;}
+  .next{flex-basis:100%;}
+  .ctrl{grid-template-columns:26px 1fr;gap:0 9px;padding:14px 14px;}
+  .ctrl-side{grid-column:2;align-items:flex-start;margin-top:10px;
+    flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px;}
+  .margin-tag{order:2;}
+  .edit-line input.dt{min-width:100%;}
+  .panel-head .hint{max-width:38vw;}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <h1 class="title">ブルベ・タイムキーパー</h1>
+    <p class="sub">GPXのウェイポイントからPCの制限時刻を出し、貯金と到着予測を追う</p>
+  </header>
+
+  <div class="cockpit-slot">
+    <div class="cockpit">
+      <div class="cockpit-grid">
+        <div class="bank">
+          <div class="bank-label" id="c-bank-label">貯金</div>
+          <div class="bank-num idle" id="c-bank-num">--:--</div>
+          <div class="bank-note" id="c-bank-note">PCの通過を記録すると確定値が出ます</div>
+        </div>
+        <div class="next" id="c-next"></div>
+      </div>
+      <div id="c-progress" hidden>
+        <div class="bar"><div class="bar-fill" id="c-bar-fill"></div><div class="bar-mark" id="c-bar-mark" hidden></div></div>
+        <div class="bar-cap"><span id="c-bar-left"></span><span id="c-bar-right"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- コース -->
+  <section class="panel">
+    <div class="panel-head" data-toggle="p-course" role="button" tabindex="0" aria-expanded="true" aria-controls="p-course">
+      <h2>コース <span class="hint" id="h-course">GPXファイル</span></h2>
+      <span class="chev">閉じる</span>
+    </div>
+    <div class="panel-body" id="p-course">
+      <div class="drop" id="drop">
+        <p>GPXファイルをここにドロップ</p>
+        <div class="drop-actions">
+          <button class="btn btn-primary" id="btn-pick">ファイルを選ぶ</button>
+          <button class="btn" id="btn-sample">サンプルコースで試す</button>
+        </div>
+        <input type="file" id="file-gpx" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
+      </div>
+      <div id="course-msg"></div>
+    </div>
+  </section>
+
+  <!-- 設定 -->
+  <section class="panel">
+    <div class="panel-head" data-toggle="p-config" role="button" tabindex="0" aria-expanded="true" aria-controls="p-config">
+      <h2>設定 <span class="hint">スタート時刻・制限時間の基準・予測ペース</span></h2>
+      <span class="chev">閉じる</span>
+    </div>
+    <div class="panel-body" id="p-config">
+      <div class="field">
+        <label class="label" for="i-start">スタート時刻</label>
+        <input id="i-start" class="in" type="datetime-local" style="max-width:290px">
+      </div>
+
+      <div class="field">
+        <span class="label">制限時間の基準</span>
+        <div class="seg" id="seg-mode">
+          <button data-mode="acp">ACP公式テーブル</button>
+          <button data-mode="custom">任意グロス速度</button>
+        </div>
+      </div>
+
+      <div id="cfg-acp">
+        <div class="row">
+          <div class="field">
+            <label class="label" for="i-class">認定距離（ゴールの総制限時間に適用）</label>
+            <select id="i-class" class="in"></select>
+          </div>
+          <div class="field">
+            <span class="label">適用される下限速度</span>
+            <div style="font-size:13px;color:var(--fg-dim);padding-top:6px">
+              0–600km 15 / 600–1000km 11.428 / 1000–1300km 13.333 km/h
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="cfg-custom" hidden>
+        <div class="field">
+          <label class="label" for="i-speed">グロス速度（km/h）— クローズ時刻 = 距離 ÷ この速度</label>
+          <input id="i-speed" class="in" type="number" min="1" max="60" step="0.1" style="max-width:170px" inputmode="decimal">
+          <div class="note">このモードではオープン時刻を定義できないため表示しません。</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label">到着予測に使うペース</span>
+        <div class="row" style="align-items:center">
+          <div class="seg" style="flex:0 0 auto" id="seg-pred">
+            <button data-pred="actual">実績平均</button>
+            <button data-pred="assumed">想定値</button>
+          </div>
+          <div class="field" style="flex:0 0 180px">
+            <input id="i-assumed" class="in" type="number" min="1" max="60" step="0.5"
+                   aria-label="想定グロス速度" inputmode="decimal">
+          </div>
+        </div>
+        <div class="note" id="pred-note"></div>
+      </div>
+
+      <div class="field">
+        <label class="check">
+          <input type="checkbox" id="i-nowmanual">
+          現在時刻を手入力する（計画・検証用）
+        </label>
+        <input id="i-now" class="in" type="datetime-local" style="max-width:290px;margin-top:8px" hidden>
+      </div>
+    </div>
+  </section>
+
+  <!-- コントロール一覧 -->
+  <section class="panel">
+    <div class="panel-head" style="cursor:default">
+      <h2>コントロール <span class="hint" id="h-controls"></span></h2>
+    </div>
+    <div id="list-area"></div>
+  </section>
+
+  <!-- バックアップ -->
+  <section class="panel">
+    <div class="panel-head" data-toggle="p-backup" role="button" tabindex="0" aria-expanded="false" aria-controls="p-backup">
+      <h2>バックアップ <span class="hint">JSONの書き出しと読み込み</span></h2>
+      <span class="chev">開く</span>
+    </div>
+    <div class="panel-body" id="p-backup" hidden>
+      <p class="note" style="margin-top:12px">
+        コース・設定・通過記録をJSONファイルとして保存できます。端末を変えるときや、
+        ブラウザが保存領域を消してしまった場合の復旧に使ってください。
+      </p>
+      <div class="drop-actions" style="justify-content:flex-start;margin-top:14px">
+        <button class="btn" id="btn-export">JSONを書き出す</button>
+        <button class="btn" id="btn-import">JSONを読み込む</button>
+        <input type="file" id="file-json" accept=".json,application/json" hidden>
+      </div>
+      <div id="backup-msg"></div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div class="save">
+      <span class="dot" id="save-dot"></span>
+      <span id="save-text">変更すると自動で保存されます</span>
+    </div>
+    <div id="reset-area"></div>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+/* ===================== 距離・幾何 ===================== */
+
+var R_EARTH = 6371008.8;
+function toRad(d){ return d * Math.PI / 180; }
+
+function haversine(a, b){
+  var dLat = toRad(b.lat - a.lat), dLon = toRad(b.lon - a.lon);
+  var la1 = toRad(a.lat), la2 = toRad(b.lat);
+  var h = Math.pow(Math.sin(dLat/2),2) + Math.cos(la1)*Math.cos(la2)*Math.pow(Math.sin(dLon/2),2);
+  return 2 * R_EARTH * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// 局所平面に落として点と線分の距離、線分上の位置tを返す
+function pointToSegment(p, a, b){
+  var k = Math.cos(toRad(a.lat));
+  var px = p.lon*k*111320, py = p.lat*110574;
+  var ax = a.lon*k*111320, ay = a.lat*110574;
+  var bx = b.lon*k*111320, by = b.lat*110574;
+  var vx = bx-ax, vy = by-ay;
+  var len2 = vx*vx + vy*vy;
+  var t = len2 === 0 ? 0 : ((px-ax)*vx + (py-ay)*vy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  var cx = ax + t*vx, cy = ay + t*vy;
+  return { dist: Math.sqrt(Math.pow(px-cx,2)+Math.pow(py-cy,2)), t: t };
+}
+
+/* ===================== GPX 解析 ===================== */
+
+function tags(root, name){
+  var els = root.getElementsByTagNameNS ? root.getElementsByTagNameNS("*", name) : null;
+  if(!els || els.length === 0) els = root.getElementsByTagName(name);
+  return Array.prototype.slice.call(els);
+}
+function childText(el, name){
+  var c = tags(el, name);
+  return c.length ? (c[0].textContent || "").trim() : "";
+}
+
+function parseGpx(text){
+  var doc = new DOMParser().parseFromString(text, "application/xml");
+  if(doc.getElementsByTagName("parsererror").length){
+    throw new Error("XMLとして読めませんでした。GPXファイルか確認してください。");
+  }
+  var root = doc.documentElement;
+  if(!root || root.nodeName.toLowerCase().indexOf("gpx") === -1){
+    throw new Error("GPXのルート要素が見つかりません。");
+  }
+  function readPt(el){
+    return { lat: parseFloat(el.getAttribute("lat")), lon: parseFloat(el.getAttribute("lon")) };
+  }
+  var track = tags(root, "trkpt").map(readPt);
+  var trackSource = "trk";
+  if(track.length < 2){ track = tags(root, "rtept").map(readPt); trackSource = "rte"; }
+  track = track.filter(function(p){ return isFinite(p.lat) && isFinite(p.lon); });
+
+  var wpts = tags(root, "wpt").map(function(el){
+    var p = readPt(el);
+    p.name = childText(el, "name") || "(名称なし)";
+    p.desc = childText(el, "desc") || childText(el, "cmt") || "";
+    return p;
+  }).filter(function(p){ return isFinite(p.lat) && isFinite(p.lon); });
+
+  var trk0 = tags(root, "trk")[0];
+  var trackName = childText(root, "name") || (trk0 ? childText(trk0, "name") : "") || "";
+  return { track: track, trackSource: trackSource, wpts: wpts, trackName: trackName };
+}
+
+function cumulative(track){
+  var cum = [0];
+  for(var i = 1; i < track.length; i++) cum[i] = cum[i-1] + haversine(track[i-1], track[i]);
+  return cum;
+}
+
+// ファイル順に単調増加を仮定してトラックへ射影（往復・周回対応）
+function projectWaypoints(track, cum, wpts){
+  if(track.length < 2){
+    var acc = 0;
+    return wpts.map(function(w, i){
+      if(i > 0) acc += haversine(wpts[i-1], w);
+      return { name:w.name, desc:w.desc, lat:w.lat, lon:w.lon, distM:acc, offTrackM:null };
+    });
+  }
+  var searchStart = 0;
+  return wpts.map(function(w){
+    var best = { d: Infinity, distM: 0, idx: searchStart };
+    for(var i = searchStart; i < track.length - 1; i++){
+      var r = pointToSegment(w, track[i], track[i+1]);
+      if(r.dist < best.d){
+        best = { d:r.dist, distM: cum[i] + r.t*(cum[i+1]-cum[i]), idx:i };
+      }
+    }
+    searchStart = best.idx;
+    return { name:w.name, desc:w.desc, lat:w.lat, lon:w.lon, distM:best.distM, offTrackM:best.d };
+  });
+}
+
+/* ===================== ACP 制限時間 ===================== */
+
+var CLOSE_SEGMENTS = [[0,600,15],[600,1000,11.428],[1000,1300,13.333]];
+var OPEN_SEGMENTS  = [[0,200,34],[200,400,32],[400,600,30],[600,1000,28],[1000,1300,26]];
+
+function segmentHours(km, segs){
+  var h = 0;
+  for(var i = 0; i < segs.length; i++){
+    var s = segs[i][0], e = segs[i][1], v = segs[i][2];
+    if(km > s) h += (Math.min(km, e) - s) / v;
+  }
+  return h;
+}
+function acpCloseHours(km){ return segmentHours(km, CLOSE_SEGMENTS); }
+function acpOpenHours(km){ return segmentHours(km, OPEN_SEGMENTS); }
+
+var OFFICIAL_LIMIT = {200:13.5, 300:20, 400:27, 600:40, 1000:75, 1200:90};
+var BREVET_CLASSES = [200, 300, 400, 600, 1000, 1200];
+
+function detectBrevetClass(totalKm){
+  if(!isFinite(totalKm) || totalKm <= 0) return "other";
+  var found = "other";
+  for(var i = 0; i < BREVET_CLASSES.length; i++){
+    var c = BREVET_CLASSES[i];
+    if(totalKm >= c*0.97 && totalKm < c*1.18) found = c;
+  }
+  return found;
+}
+
+/* ===================== 整形 ===================== */
+
+var HOUR_MS = 3600000;
+
+function fmtSigned(h){
+  if(h === null || h === undefined || !isFinite(h)) return "—";
+  var neg = h < 0;
+  var total = Math.floor(Math.abs(h)*3600 + 0.5);
+  var hh = Math.floor(total/3600), mm = Math.floor((total%3600)/60);
+  return (neg ? "−" : "+") + hh + ":" + String(mm).padStart(2,"0");
+}
+function fmtDur(h){
+  if(h === null || h === undefined || !isFinite(h)) return "—";
+  var total = Math.floor(Math.abs(h)*3600 + 0.5);
+  var hh = Math.floor(total/3600), mm = Math.floor((total%3600)/60);
+  return (h < 0 ? "−" : "") + hh + ":" + String(mm).padStart(2,"0");
+}
+function fmtClock(date, startDate){
+  if(!(date instanceof Date) || isNaN(date.getTime())) return "—";
+  var hh = String(date.getHours()).padStart(2,"0");
+  var mm = String(date.getMinutes()).padStart(2,"0");
+  var tag = "";
+  if(startDate instanceof Date && !isNaN(startDate.getTime())){
+    var diff = dayDiff(date, startDate);
+    if(diff !== 0) tag = diff > 0 ? " +" + diff + "d" : " " + diff + "d";
+  }
+  return hh + ":" + mm + tag;
+}
+function dayDiff(date, startDate){
+  var d0 = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  var d1 = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.round((d1 - d0) / 86400000);
+}
+function dayOffsetLabel(date, startDate){
+  if(!(date instanceof Date) || isNaN(date.getTime())) return "";
+  if(!(startDate instanceof Date) || isNaN(startDate.getTime())) return "";
+  var d = dayDiff(date, startDate);
+  if(d === 0) return "スタート当日";
+  if(d > 0) return "スタート " + d + " 日目";
+  return "スタート " + (-d) + " 日前";
+}
+function toLocalInput(date){
+  function p(n){ return String(n).padStart(2,"0"); }
+  return date.getFullYear() + "-" + p(date.getMonth()+1) + "-" + p(date.getDate())
+       + "T" + p(date.getHours()) + ":" + p(date.getMinutes());
+}
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+/* ===================== サンプルGPX ===================== */
+
+function makeSampleGpx(){
+  var centerLat = 35.55, centerLon = 139.45;
+  var circ = 204;
+  var rKm = circ / (2*Math.PI);
+  var dLat = rKm / 111.32;
+  var dLon = rKm / (111.32 * Math.cos(toRad(centerLat)));
+  function at(km){
+    var th = 2*Math.PI*(km/circ) - Math.PI/2;
+    return { lat: centerLat + dLat*Math.sin(th), lon: centerLon + dLon*Math.cos(th) };
+  }
+  var trk = [];
+  for(var i = 0; i <= 600; i++){
+    var p = at(circ * i / 600);
+    trk.push('      <trkpt lat="' + p.lat.toFixed(6) + '" lon="' + p.lon.toFixed(6) + '"/>');
+  }
+  var marks = [[0,"スタート"],[48.2,"PC1 コンビニ多摩"],[96.5,"PC2 峠の茶屋"],
+               [142.8,"PC3 河川敷公園"],[176.4,"通過チェック 旧道分岐"],[203.6,"ゴール"]];
+  var wpt = marks.map(function(m){
+    var p = at(m[0] % circ);
+    return '  <wpt lat="' + p.lat.toFixed(6) + '" lon="' + p.lon.toFixed(6) + '"><name>'
+         + m[1] + '</name><desc>公式距離 ' + m[0] + ' km</desc></wpt>';
+  }).join("\n");
+  return '<?xml version="1.0" encoding="UTF-8"?>\n'
+    + '<gpx version="1.1" creator="sample" xmlns="http://www.topografix.com/GPX/1/1">\n'
+    + '  <metadata><name>サンプル 200km 周回コース</name></metadata>\n'
+    + wpt + "\n"
+    + '  <trk><name>サンプル 200km 周回コース</name><trkseg>\n'
+    + trk.join("\n") + "\n  </trkseg></trk>\n</gpx>";
+}
+
+/* ===================== 状態 ===================== */
+
+function defaultStart(){
+  var d = new Date();
+  d.setHours(6, 0, 0, 0);
+  return toLocalInput(d);
+}
+
+var S = {
+  gpxName: "",
+  parsed: null,
+  startStr: defaultStart(),
+  mode: "acp",
+  customSpeed: "15",
+  brevetClass: "auto",
+  predBasis: "actual",
+  assumedSpeed: "20",
+  overrides: {},
+  disabled: {},
+  passes: {},
+  nowManual: false,
+  nowStr: toLocalInput(new Date())
+};
+
+var UI = { courseError: "", backupMsg: "", confirmReset: false, tickId: null };
+
+/* ===================== 保存（localStorage） ===================== */
+
+var STORE_KEY = "brevet.timekeeper.session";
+var STORE_VERSION = 1;
+var storageAvailable = (function(){
+  try{
+    var k = "__bk_test__";
+    window.localStorage.setItem(k, "1");
+    window.localStorage.removeItem(k);
+    return true;
+  }catch(e){ return false; }
+})();
+
+function packSession(){
+  return {
+    v: STORE_VERSION,
+    savedAt: new Date().toISOString(),
+    gpxName: S.gpxName,
+    parsed: S.parsed ? {
+      wpts: S.parsed.wpts.map(function(w){
+        return { name:w.name, desc:w.desc, lat:w.lat, lon:w.lon,
+                 distM:w.distM, offTrackM:w.offTrackM };
+      }),
+      totalKm: S.parsed.totalKm,
+      trackSource: S.parsed.trackSource,
+      hasTrack: S.parsed.hasTrack,
+      trackPoints: S.parsed.trackPoints,
+      trackName: S.parsed.trackName
+    } : null,
+    startStr: S.startStr, mode: S.mode, customSpeed: S.customSpeed,
+    brevetClass: S.brevetClass, predBasis: S.predBasis, assumedSpeed: S.assumedSpeed,
+    overrides: S.overrides, disabled: S.disabled, passes: S.passes,
+    nowManual: S.nowManual, nowStr: S.nowStr
+  };
+}
+
+function isObj(o){ return o && typeof o === "object" && !Array.isArray(o); }
+
+function applySession(s){
+  if(!s || s.v !== STORE_VERSION) throw new Error("形式が違います");
+  if(s.parsed && Array.isArray(s.parsed.wpts)) S.parsed = s.parsed; else S.parsed = null;
+  if(typeof s.gpxName === "string") S.gpxName = s.gpxName;
+  if(typeof s.startStr === "string" && s.startStr) S.startStr = s.startStr;
+  if(s.mode === "acp" || s.mode === "custom") S.mode = s.mode;
+  if(s.customSpeed !== undefined) S.customSpeed = String(s.customSpeed);
+  if(s.brevetClass !== undefined) S.brevetClass = String(s.brevetClass);
+  if(s.predBasis === "actual" || s.predBasis === "assumed") S.predBasis = s.predBasis;
+  if(s.assumedSpeed !== undefined) S.assumedSpeed = String(s.assumedSpeed);
+  S.overrides = isObj(s.overrides) ? s.overrides : {};
+  S.disabled  = isObj(s.disabled)  ? s.disabled  : {};
+  S.passes    = isObj(s.passes)    ? s.passes    : {};
+  if(typeof s.nowManual === "boolean") S.nowManual = s.nowManual;
+  if(typeof s.nowStr === "string" && s.nowStr) S.nowStr = s.nowStr;
+}
+
+var saveTimer = null, saveState = "idle", savedAt = null;
+
+function setSaveState(st){
+  saveState = st;
+  var dot = document.getElementById("save-dot");
+  var txt = document.getElementById("save-text");
+  dot.className = "dot" + (st === "saved" ? " saved" : st === "saving" ? " saving" : st === "error" ? " error" : "");
+  if(st === "saving") txt.textContent = "保存中";
+  else if(st === "saved") txt.textContent = "保存済み" + (savedAt ? " " + fmtClock(savedAt, null) : "") + " ・ 次に開いたときも続きから使えます";
+  else if(st === "error") txt.textContent = "この環境では保存できません。JSONの書き出しで控えを取ってください";
+  else txt.textContent = "変更すると自動で保存されます";
+}
+
+function scheduleSave(){
+  if(!storageAvailable){ setSaveState("error"); return; }
+  setSaveState("saving");
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){
+    try{
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(packSession()));
+      savedAt = new Date();
+      setSaveState("saved");
+    }catch(e){
+      setSaveState("error");
+    }
+  }, 500);
+}
+
+function loadSaved(){
+  if(!storageAvailable) return false;
+  try{
+    var raw = window.localStorage.getItem(STORE_KEY);
+    if(!raw) return false;
+    applySession(JSON.parse(raw));
+    savedAt = null;
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ===================== 派生値 ===================== */
+
+function getNow(){
+  if(S.nowManual){
+    var d = new Date(S.nowStr);
+    if(!isNaN(d.getTime())) return d;
+  }
+  return new Date();
+}
+
+function derived(){
+  var now = getNow();
+  var startDate = S.startStr ? new Date(S.startStr) : null;
+  if(startDate && isNaN(startDate.getTime())) startDate = null;
+
+  var controls = [];
+  if(S.parsed){
+    S.parsed.wpts.forEach(function(w, i){
+      if(S.disabled[i]) return;
+      var ov = S.overrides[i];
+      var km = (ov !== undefined && ov !== "") ? Number(ov) : w.distM/1000;
+      controls.push({
+        idx: i, name: w.name, desc: w.desc,
+        km: isFinite(km) ? km : 0,
+        overridden: (ov !== undefined && ov !== ""),
+        offTrackM: w.offTrackM
+      });
+    });
+  }
+
+  var courseKm = 0;
+  if(S.parsed){
+    var last = controls.length ? controls[controls.length-1].km : 0;
+    courseKm = Math.max(last, S.parsed.totalKm);
+  }
+
+  var effClass = S.brevetClass === "auto" ? detectBrevetClass(courseKm)
+               : S.brevetClass === "other" ? "other" : Number(S.brevetClass);
+
+  var goalIdx = controls.length ? controls[controls.length-1].idx : -1;
+
+  function closeHoursFor(km, isGoal){
+    if(S.mode === "custom"){
+      var v = Number(S.customSpeed);
+      if(!isFinite(v) || v <= 0) return NaN;
+      return km / v;
+    }
+    var h = acpCloseHours(km);
+    // 総制限時間は実測距離ではなく認定距離で決まるので、ゴールは公式値で上書きする
+    if(isGoal && effClass !== "other" && OFFICIAL_LIMIT[effClass]){
+      h = OFFICIAL_LIMIT[effClass];
+    }
+    return h;
+  }
+
+  var rows = [];
+  if(startDate){
+    rows = controls.map(function(c){
+      var isGoal = c.idx === goalIdx;
+      var closeH = closeHoursFor(c.km, isGoal);
+      var openH = S.mode === "acp" ? acpOpenHours(c.km) : NaN;
+      var passedAt = S.passes[c.idx] ? new Date(S.passes[c.idx]) : null;
+      return {
+        idx:c.idx, name:c.name, desc:c.desc, km:c.km,
+        overridden:c.overridden, offTrackM:c.offTrackM, isGoal:isGoal,
+        closeH:closeH, openH:openH,
+        closeAt: isFinite(closeH) ? new Date(startDate.getTime() + closeH*HOUR_MS) : null,
+        openAt: isFinite(openH) ? new Date(startDate.getTime() + openH*HOUR_MS) : null,
+        passedAt: passedAt
+      };
+    });
+  }
+
+  // 直近通過（スタート前の記録はペース計算から除外）
+  var anchor = null, actualSpeed = null;
+  if(startDate){
+    var valid = rows.filter(function(r){ return r.passedAt && r.passedAt >= startDate; })
+                    .sort(function(a,b){ return a.km - b.km; });
+    if(valid.length === 0){
+      anchor = { km:0, at:startDate, row:null };
+    }else{
+      var lastR = valid[valid.length-1];
+      anchor = { km:lastR.km, at:lastR.passedAt, row:lastR };
+      var h = (anchor.at - startDate) / HOUR_MS;
+      if(anchor.km > 0 && h > 0) actualSpeed = anchor.km / h;
+    }
+  }
+
+  var assumed = Number(S.assumedSpeed);
+  if(!isFinite(assumed) || assumed <= 0) assumed = 20;
+  var predSpeed = (S.predBasis === "actual" && actualSpeed) ? actualSpeed : assumed;
+
+  function etaFor(km){
+    if(!anchor) return null;
+    var rest = km - anchor.km;
+    if(rest <= 0) return anchor.at;
+    return new Date(anchor.at.getTime() + (rest/predSpeed)*HOUR_MS);
+  }
+
+  rows.forEach(function(r){
+    r.eta = r.passedAt ? null : etaFor(r.km);
+    r.bankH = (r.passedAt && r.closeAt) ? (r.closeAt - r.passedAt)/HOUR_MS : null;
+    r.predMarginH = (r.eta && r.closeAt) ? (r.closeAt - r.eta)/HOUR_MS : null;
+    r.beforeStart = !!(r.passedAt && startDate && r.passedAt < startDate);
+  });
+
+  var nextRow = null;
+  for(var i = 0; i < rows.length; i++){ if(!rows[i].passedAt){ nextRow = rows[i]; break; } }
+
+  var totalLimitH = rows.length ? rows[rows.length-1].closeH : NaN;
+  var lastBank = (anchor && anchor.row) ? (anchor.row.closeAt - anchor.at)/HOUR_MS : null;
+
+  var estKm = null, estBankH = null;
+  if(anchor){
+    var eh = (now - anchor.at)/HOUR_MS;
+    estKm = eh < 0 ? anchor.km : Math.min(anchor.km + eh*predSpeed, courseKm);
+    if(startDate){
+      var ch = closeHoursFor(estKm, false);
+      if(isFinite(ch)) estBankH = (new Date(startDate.getTime() + ch*HOUR_MS) - now)/HOUR_MS;
+    }
+  }
+
+  return {
+    now:now, startDate:startDate, controls:controls, rows:rows, courseKm:courseKm,
+    effClass:effClass, anchor:anchor, actualSpeed:actualSpeed, predSpeed:predSpeed,
+    predIsActual: (S.predBasis === "actual" && !!actualSpeed),
+    nextRow:nextRow, totalLimitH:totalLimitH, lastBank:lastBank,
+    estKm:estKm, estBankH:estBankH,
+    elapsedH: startDate ? (now - startDate)/HOUR_MS : 0
+  };
+}
+
+function bankClass(h){
+  if(h === null || h === undefined || !isFinite(h)) return "idle";
+  return h >= 0 ? "pos" : "neg";
+}
+
+/* ===================== 描画 ===================== */
+
+var $ = function(id){ return document.getElementById(id); };
+
+// コックピット（1秒ごと。入力欄を含まないので再構築して安全）
+function renderCockpit(){
+  var D = derived();
+
+  $("c-bank-label").textContent = (D.anchor && D.anchor.row)
+    ? D.anchor.row.name + " 通過時点の貯金" : "貯金";
+  var num = $("c-bank-num");
+  num.className = "bank-num " + bankClass(D.lastBank);
+  num.textContent = D.lastBank !== null ? fmtSigned(D.lastBank) : "--:--";
+  $("c-bank-note").textContent = (D.lastBank !== null)
+    ? "クローズ " + fmtClock(D.anchor.row.closeAt, D.startDate) + " に対して "
+      + fmtClock(D.anchor.at, D.startDate) + " 通過"
+    : "PCの通過を記録すると確定値が出ます";
+
+  var nx = $("c-next");
+  if(D.nextRow){
+    var r = D.nextRow;
+    var untilH = (r.closeAt - D.now)/HOUR_MS;
+    nx.innerHTML =
+      '<div class="next-name">次 ▸ ' + esc(r.name) + '（' + r.km.toFixed(1) + ' km）</div>'
+      + kvRow("クローズ", fmtClock(r.closeAt, D.startDate), "")
+      + kvRow("クローズまで", fmtDur(untilH), untilH < 0 ? "neg" : "")
+      + kvRow("到着予測", fmtClock(r.eta, D.startDate), "")
+      + kvRow("予測の余裕", fmtSigned(r.predMarginH), bankClass(r.predMarginH))
+      + kvRow("推定現在地点の貯金",
+          fmtSigned(D.estBankH) + '<span class="sm">' + (D.estKm !== null ? D.estKm.toFixed(1) + "km" : "") + '</span>',
+          bankClass(D.estBankH));
+  }else if(D.rows.length){
+    nx.innerHTML = '<div class="next-name">全PC通過済み</div>';
+  }else{
+    nx.innerHTML = '<div class="next-name" style="color:var(--fg-faint)">GPXを読み込むとここに次のPCが出ます</div>';
+  }
+
+  var prog = $("c-progress");
+  if(D.rows.length && isFinite(D.totalLimitH) && D.totalLimitH > 0){
+    prog.hidden = false;
+    var pct = Math.max(0, Math.min(100, (D.elapsedH/D.totalLimitH)*100));
+    $("c-bar-fill").style.width = pct + "%";
+    var mark = $("c-bar-mark");
+    if(D.estKm !== null && D.courseKm > 0){
+      mark.hidden = false;
+      mark.style.left = Math.max(0, Math.min(100, (D.estKm/D.courseKm)*100)) + "%";
+    }else{ mark.hidden = true; }
+    $("c-bar-left").textContent = "経過 " + fmtDur(D.elapsedH) + " / 制限 " + fmtDur(D.totalLimitH);
+    $("c-bar-right").textContent = "現在 " + fmtClock(D.now, D.startDate) + (S.nowManual ? "（手動）" : "");
+  }else{
+    prog.hidden = true;
+  }
+}
+
+function kvRow(k, vHtml, cls){
+  return '<div class="kv"><span class="k">' + esc(k) + '</span><span class="v '
+       + (cls||"") + '">' + vHtml + '</span></div>';
+}
+
+// コース情報のメッセージ
+function renderCourseMsg(){
+  var el = $("course-msg");
+  var html = "";
+  if(UI.courseError) html += '<div class="err">' + esc(UI.courseError) + '</div>';
+  if(S.parsed){
+    var p = S.parsed;
+    html += '<div class="note">ウェイポイント ' + p.wpts.length + ' 点 / トラック '
+          + (p.hasTrack ? p.trackPoints + " 点" : "なし") + ' / 総距離 '
+          + p.totalKm.toFixed(1) + ' km'
+          + (p.trackSource === "rte" ? "（rteを距離計算に使用）" : "") + '</div>';
+    if(!p.hasTrack){
+      html += '<div class="warn">トラックが無いため、ウェイポイント間の直線距離を積算しています。'
+            + '実距離とは大きくずれます。各PCの距離を公式値で上書きしてください。</div>';
+    }
+    var far = p.wpts.some(function(w){ return w.offTrackM != null && w.offTrackM > 300; });
+    if(p.hasTrack && far){
+      html += '<div class="warn">コースから300m以上離れたウェイポイントがあります。'
+            + '距離の割り当てが正しくない可能性があるので、一覧で距離を確認してください。</div>';
+    }
+    html += '<div class="warn info">GPXから求めた距離はキューシートの公式距離と数％ずれます。'
+          + '認定に関わる判断は主催者の公式値で行ってください。</div>';
+  }
+  el.innerHTML = html;
+  $("h-course").textContent = S.gpxName || "GPXファイル";
+}
+
+// 設定欄の値を反映
+function renderConfig(){
+  var D = derived();
+  $("i-start").value = S.startStr;
+
+  Array.prototype.forEach.call($("seg-mode").children, function(b){
+    b.setAttribute("aria-pressed", b.dataset.mode === S.mode ? "true" : "false");
+  });
+  $("cfg-acp").hidden = S.mode !== "acp";
+  $("cfg-custom").hidden = S.mode !== "custom";
+
+  var sel = $("i-class");
+  var auto = detectBrevetClass(D.courseKm);
+  var opts = ['<option value="auto">自動判定'
+    + (D.courseKm ? "（" + (auto === "other" ? "該当なし" : auto + "km") + "）" : "") + '</option>'];
+  BREVET_CLASSES.forEach(function(c){
+    opts.push('<option value="' + c + '">' + c + ' km（' + fmtDur(OFFICIAL_LIMIT[c]) + '）</option>');
+  });
+  opts.push('<option value="other">指定しない（計算値のみ）</option>');
+  sel.innerHTML = opts.join("");
+  sel.value = S.brevetClass;
+
+  if(document.activeElement !== $("i-speed")) $("i-speed").value = S.customSpeed;
+  if(document.activeElement !== $("i-assumed")) $("i-assumed").value = S.assumedSpeed;
+  $("i-assumed").disabled = (S.predBasis === "actual" && !!D.actualSpeed);
+
+  Array.prototype.forEach.call($("seg-pred").children, function(b){
+    b.setAttribute("aria-pressed", b.dataset.pred === S.predBasis ? "true" : "false");
+  });
+
+  var note = "現在の予測ペース " + D.predSpeed.toFixed(1) + " km/h";
+  if(D.predIsActual){
+    note += "（スタートから " + (D.anchor.row ? D.anchor.row.name : "") + " までの実績）";
+  }else{
+    note += "（想定値）";
+    if(S.predBasis === "actual") note += " — 通過記録がまだ無いため想定値を使用中";
+  }
+  $("pred-note").textContent = note;
+
+  $("i-nowmanual").checked = S.nowManual;
+  $("i-now").hidden = !S.nowManual;
+  if(document.activeElement !== $("i-now")) $("i-now").value = S.nowStr;
+}
+
+// コントロール一覧
+function renderList(){
+  var D = derived();
+  var area = $("list-area");
+  $("h-controls").textContent = D.rows.length
+    ? D.rows.length + " 箇所 / 全長 " + D.courseKm.toFixed(1) + " km" : "";
+
+  if(!S.parsed){
+    area.innerHTML = '<div class="empty">GPXを読み込むとPCの一覧と制限時刻が出ます。</div>';
+    return;
+  }
+  if(!D.startDate){
+    area.innerHTML = '<div class="empty">スタート時刻を入力してください。</div>';
+    return;
+  }
+
+  var rowByIdx = {};
+  D.rows.forEach(function(r, n){ rowByIdx[r.idx] = { r:r, seq:n+1 }; });
+
+  var html = '<div class="list">';
+  S.parsed.wpts.forEach(function(w, i){
+    var entry = rowByIdx[i];
+    var off = !!S.disabled[i];
+    var r = entry ? entry.r : null;
+
+    html += '<div class="ctrl' + (r && r.passedAt ? " done" : "") + (off ? " off" : "") + '">';
+    html += '<div class="seq">' + (off ? "—" : entry.seq) + '</div>';
+
+    html += '<div class="ctrl-main">';
+    html += '<div class="ctrl-name">' + esc(w.name) + '</div>';
+    var meta = r ? r.km.toFixed(1) + " km" : "対象外";
+    if(r && r.overridden) meta += " ・手入力";
+    if(w.offTrackM != null && w.offTrackM > 300) meta += " ・コースから" + Math.round(w.offTrackM) + "m";
+    if(w.desc) meta += " ・" + w.desc;
+    html += '<div class="ctrl-meta">' + esc(meta) + '</div>';
+
+    if(r){
+      html += '<div class="times">';
+      if(S.mode === "acp"){
+        html += '<div class="time"><i>オープン</i><b style="color:var(--cyan)">'
+              + fmtClock(r.openAt, D.startDate) + '</b></div>';
+      }
+      html += '<div class="time"><i>クローズ</i><b>' + fmtClock(r.closeAt, D.startDate) + '</b></div>';
+      html += '<div class="time"><i>' + (r.passedAt ? "通過" : "到着予測") + '</i><b style="color:'
+            + (r.passedAt ? "var(--green)" : "var(--fg-dim)") + '">'
+            + fmtClock(r.passedAt ? r.passedAt : r.eta, D.startDate) + '</b></div>';
+      html += '</div>';
+
+      var kmVal = (S.overrides[i] !== undefined) ? S.overrides[i] : (w.distM/1000).toFixed(1);
+      html += '<div class="edit-line">'
+            + '<label class="label" for="km-' + i + '">距離</label>'
+            + '<input id="km-' + i + '" class="in km" type="number" step="0.1" min="0" inputmode="decimal"'
+            + ' data-field="km" data-i="' + i + '" value="' + esc(kmVal) + '">'
+            + '<span class="day-tag">km</span>'
+            + (S.overrides[i] !== undefined
+                ? '<button class="btn-link" data-act="reset-km" data-i="' + i + '">GPXの値に戻す</button>' : "")
+            + '</div>';
+
+      if(r.passedAt){
+        html += '<div class="edit-line">'
+              + '<label class="label" for="pass-' + i + '">通過日時</label>'
+              + '<input id="pass-' + i + '" class="in dt" type="datetime-local"'
+              + ' data-field="pass" data-i="' + i + '" value="' + toLocalInput(r.passedAt) + '">'
+              + '<span class="day-tag">' + esc(dayOffsetLabel(r.passedAt, D.startDate)) + '</span>'
+              + '<button class="btn-link" data-act="clear-pass" data-i="' + i + '">記録を消す</button>'
+              + (r.beforeStart ? '<span class="inline-warn">スタートより前の日時です（ペース計算から除外中）</span>' : "")
+              + '</div>';
+      }
+    }
+    html += '</div>'; // ctrl-main
+
+    html += '<div class="ctrl-side">';
+    if(r){
+      var mv = r.passedAt ? r.bankH : r.predMarginH;
+      html += '<div class="margin ' + bankClass(mv) + '">' + fmtSigned(mv) + '</div>';
+      html += '<div class="margin-tag">' + (r.passedAt ? "貯金（実績）" : "余裕（予測）") + '</div>';
+      if(!r.passedAt){
+        html += '<button class="btn btn-sm" data-act="stamp" data-i="' + i + '">いま通過</button>';
+      }
+    }
+    html += '<button class="btn-link" data-act="toggle-off" data-i="' + i + '">'
+          + (off ? "PCに戻す" : "PCから外す") + '</button>';
+    html += '</div>';
+
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<div class="toolbar">'
+        + '<button class="btn btn-sm" data-act="clear-passes">通過記録をすべて消す</button>'
+        + '<button class="btn btn-sm" data-act="clear-overrides">距離の手入力をすべて消す</button>'
+        + '<button class="btn btn-sm" data-act="clear-disabled">外したPCを戻す</button>'
+        + '</div>';
+
+  area.innerHTML = html;
+}
+
+function renderReset(){
+  var el = $("reset-area");
+  if(UI.confirmReset){
+    el.innerHTML = '<span style="font-size:12px;color:var(--fg-dim);margin-right:8px">コースも通過記録も消えます</span>'
+      + '<button class="btn btn-sm" data-act="do-reset">消す</button>'
+      + '<button class="btn-link" data-act="cancel-reset">やめる</button>';
+  }else{
+    el.innerHTML = '<button class="btn-link" data-act="ask-reset">保存内容をすべて消す</button>';
+  }
+}
+
+function renderBackupMsg(){
+  $("backup-msg").innerHTML = UI.backupMsg
+    ? '<div class="' + (UI.backupMsg.type === "err" ? "err" : "warn info") + '">'
+      + esc(UI.backupMsg.text) + '</div>' : "";
+}
+
+// フォーカス位置を保った再描画
+function renderAll(){
+  var el = document.activeElement;
+  var id = el && el.id ? el.id : null;
+  var ss = null, se = null;
+  try{ ss = el.selectionStart; se = el.selectionEnd; }catch(e){}
+  renderCockpit();
+  renderCourseMsg();
+  renderConfig();
+  renderList();
+  renderReset();
+  renderBackupMsg();
+  if(id){
+    var n = document.getElementById(id);
+    if(n){
+      try{ n.focus({ preventScroll:true }); }catch(e){ n.focus(); }
+      if(ss !== null && se !== null){ try{ n.setSelectionRange(ss, se); }catch(e){} }
+    }
+  }
+}
+
+function update(){ renderAll(); scheduleSave(); }
+
+/* ===================== 読み込み ===================== */
+
+function loadGpxText(text, name){
+  try{
+    var g = parseGpx(text);
+    if(g.wpts.length === 0){
+      throw new Error("ウェイポイント（<wpt>）がありません。PCの位置がウェイポイントとして入ったGPXを読み込んでください。");
+    }
+    var cum = g.track.length > 1 ? cumulative(g.track) : [];
+    var placed = projectWaypoints(g.track, cum, g.wpts);
+    var totalKm = g.track.length > 1 ? cum[cum.length-1]/1000 : placed[placed.length-1].distM/1000;
+    S.parsed = {
+      wpts: placed, totalKm: totalKm, trackSource: g.trackSource,
+      hasTrack: g.track.length > 1, trackPoints: g.track.length,
+      trackName: g.trackName || name
+    };
+    S.gpxName = name;
+    S.overrides = {}; S.disabled = {}; S.passes = {};
+    S.brevetClass = "auto";
+    UI.courseError = "";
+  }catch(e){
+    S.parsed = null;
+    UI.courseError = e.message || "読み込みに失敗しました。";
+  }
+  update();
+}
+
+function readFile(file, done){
+  if(!file) return;
+  var fr = new FileReader();
+  fr.onload = function(){ done(String(fr.result), file.name); };
+  fr.onerror = function(){ UI.courseError = "ファイルを読めませんでした。"; update(); };
+  fr.readAsText(file);
+}
+
+/* ===================== バックアップ ===================== */
+
+function exportJson(){
+  try{
+    var data = JSON.stringify(packSession(), null, 2);
+    var blob = new Blob([data], { type:"application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    var stamp = toLocalInput(new Date()).replace(/[:T-]/g, "").slice(0, 12);
+    a.href = url;
+    a.download = "brevet-" + stamp + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    UI.backupMsg = { type:"info", text:"書き出しました。ファイルアプリやiCloud Driveに保存してください。" };
+  }catch(e){
+    UI.backupMsg = { type:"err", text:"書き出しに失敗しました: " + e.message };
+  }
+  renderBackupMsg();
+}
+
+function importJson(text){
+  try{
+    applySession(JSON.parse(text));
+    UI.backupMsg = { type:"info", text:"読み込みました。" };
+    UI.courseError = "";
+  }catch(e){
+    UI.backupMsg = { type:"err", text:"読み込めませんでした: " + e.message };
+  }
+  update();
+}
+
+/* ===================== 操作 ===================== */
+
+function stampPass(i){ S.passes[i] = getNow().getTime(); update(); }
+function clearPass(i){ delete S.passes[i]; update(); }
+
+function resetAll(){
+  try{ if(storageAvailable) window.localStorage.removeItem(STORE_KEY); }catch(e){}
+  S.parsed = null; S.gpxName = "";
+  S.overrides = {}; S.disabled = {}; S.passes = {};
+  S.mode = "acp"; S.customSpeed = "15"; S.brevetClass = "auto";
+  S.predBasis = "actual"; S.assumedSpeed = "20";
+  S.nowManual = false; S.startStr = defaultStart();
+  UI.courseError = ""; UI.confirmReset = false; UI.backupMsg = "";
+  savedAt = null;
+  renderAll();
+  setSaveState("idle");
+}
+
+/* ===================== イベント ===================== */
+
+// パネル開閉
+document.addEventListener("click", function(e){
+  var head = e.target.closest ? e.target.closest("[data-toggle]") : null;
+  if(head){
+    var body = document.getElementById(head.dataset.toggle);
+    var open = body.hidden;
+    body.hidden = !open;
+    head.setAttribute("aria-expanded", open ? "true" : "false");
+    head.querySelector(".chev").textContent = open ? "閉じる" : "開く";
+  }
+});
+document.addEventListener("keydown", function(e){
+  if((e.key === "Enter" || e.key === " ") && e.target.hasAttribute && e.target.hasAttribute("data-toggle")){
+    e.preventDefault();
+    e.target.click();
+  }
+});
+
+// アクション（一覧・リセット）
+document.addEventListener("click", function(e){
+  var b = e.target.closest ? e.target.closest("[data-act]") : null;
+  if(!b) return;
+  var i = b.dataset.i;
+  switch(b.dataset.act){
+    case "stamp": stampPass(i); break;
+    case "clear-pass": clearPass(i); break;
+    case "reset-km": delete S.overrides[i]; update(); break;
+    case "toggle-off":
+      if(S.disabled[i]) delete S.disabled[i]; else S.disabled[i] = true;
+      update(); break;
+    case "clear-passes": S.passes = {}; update(); break;
+    case "clear-overrides": S.overrides = {}; update(); break;
+    case "clear-disabled": S.disabled = {}; update(); break;
+    case "ask-reset": UI.confirmReset = true; renderReset(); break;
+    case "cancel-reset": UI.confirmReset = false; renderReset(); break;
+    case "do-reset": resetAll(); break;
+  }
+});
+
+// 一覧内の入力
+document.addEventListener("input", function(e){
+  var t = e.target;
+  if(!t.dataset || !t.dataset.field) return;
+  var i = t.dataset.i;
+  if(t.dataset.field === "km"){
+    S.overrides[i] = t.value;
+    update();
+  }else if(t.dataset.field === "pass"){
+    var d = new Date(t.value);
+    if(!isNaN(d.getTime())){ S.passes[i] = d.getTime(); update(); }
+  }
+});
+
+// 設定
+$("i-start").addEventListener("input", function(){ S.startStr = this.value; update(); });
+$("i-speed").addEventListener("input", function(){ S.customSpeed = this.value; update(); });
+$("i-assumed").addEventListener("input", function(){ S.assumedSpeed = this.value; update(); });
+$("i-class").addEventListener("change", function(){ S.brevetClass = this.value; update(); });
+$("i-nowmanual").addEventListener("change", function(){
+  S.nowManual = this.checked;
+  if(this.checked) S.nowStr = toLocalInput(new Date());
+  update();
+});
+$("i-now").addEventListener("input", function(){ S.nowStr = this.value; update(); });
+
+$("seg-mode").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-mode]");
+  if(!b) return;
+  S.mode = b.dataset.mode; update();
+});
+$("seg-pred").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-pred]");
+  if(!b) return;
+  S.predBasis = b.dataset.pred; update();
+});
+
+// ファイル
+$("btn-pick").addEventListener("click", function(){ $("file-gpx").click(); });
+$("file-gpx").addEventListener("change", function(){
+  readFile(this.files[0], loadGpxText);
+  this.value = "";
+});
+$("btn-sample").addEventListener("click", function(){
+  loadGpxText(makeSampleGpx(), "サンプル 200km 周回コース");
+});
+
+var drop = $("drop");
+["dragenter","dragover"].forEach(function(ev){
+  drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("over"); });
+});
+["dragleave","drop"].forEach(function(ev){
+  drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("over"); });
+});
+drop.addEventListener("drop", function(e){
+  if(e.dataTransfer && e.dataTransfer.files) readFile(e.dataTransfer.files[0], loadGpxText);
+});
+
+// バックアップ
+$("btn-export").addEventListener("click", exportJson);
+$("btn-import").addEventListener("click", function(){ $("file-json").click(); });
+$("file-json").addEventListener("change", function(){
+  readFile(this.files[0], function(text){ importJson(text); });
+  this.value = "";
+});
+
+/* ===================== 起動 ===================== */
+
+(function init(){
+  var restored = loadSaved();
+  renderAll();
+  setSaveState(storageAvailable ? (restored ? "saved" : "idle") : "error");
+  if(restored) $("save-text").textContent = "前回の内容を読み込みました";
+
+  // 1秒ごとにコックピットのみ更新（入力欄のフォーカスに触れない）
+  UI.tickId = setInterval(function(){ if(!document.hidden) renderCockpit(); }, 1000);
+  document.addEventListener("visibilitychange", function(){
+    if(!document.hidden) renderCockpit();
+  });
+})();
+</script>
+</body>
+</html>
