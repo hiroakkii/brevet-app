@@ -25,6 +25,17 @@
   --red:#FF6B5E;
   --cyan:#63C4D6;
   --green:#6ED39A;
+  --on-accent:#231604;
+  --done-bg:rgba(110,211,154,.05);
+  --warn-bg:rgba(255,176,32,.08);
+  --warn-line:rgba(255,176,32,.30);
+  --warn-fg:#F2CE8A;
+  --info-bg:rgba(99,196,214,.07);
+  --info-line:rgba(99,196,214,.28);
+  --info-fg:#A8DCE6;
+  --err-bg:rgba(255,107,94,.09);
+  --err-line:rgba(255,107,94,.35);
+  --err-fg:#FFB3AB;
   --num:ui-monospace,"SF Mono","Roboto Mono","DejaVu Sans Mono",Menlo,monospace;
   --safe-t:env(safe-area-inset-top,0px);
   --safe-b:env(safe-area-inset-bottom,0px);
@@ -51,18 +62,26 @@ body{
 
 /* コックピット（スクロール時も残す） */
 .cockpit-slot{position:sticky;top:0;z-index:20;padding-top:var(--safe-t);
-  background:linear-gradient(180deg,var(--bg) 78%,rgba(15,26,36,0));padding-bottom:10px;}
+  background:var(--bg);padding-bottom:10px;}
 .cockpit{
   background:linear-gradient(180deg,var(--panel-2),var(--panel));
   border:1px solid var(--line);border-radius:8px;padding:16px 18px 14px;
 }
 .cockpit-grid{display:flex;flex-wrap:wrap;gap:18px 36px;align-items:flex-end;}
 .bank{flex:0 0 auto;min-width:0;}
-.bank-label{font-size:12px;color:var(--fg-dim);margin-bottom:1px;}
+.bank-label{font-size:17px;color:var(--fg);font-weight:600;margin-bottom:3px;line-height:1.3;}
+.bank-label .bank-loc{color:var(--amber);}
 .bank-num{font-family:var(--num);font-size:56px;line-height:.95;font-weight:600;
   font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
 .pos{color:var(--amber);} .neg{color:var(--red);} .idle{color:var(--fg-faint);}
 .bank-note{font-size:11px;color:var(--fg-faint);margin-top:5px;}
+.pos-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.pos-label{font-size:13px;color:var(--fg-dim);flex:0 0 auto;}
+input.pos-in{width:92px;flex:0 0 auto;padding:7px 9px;min-height:38px;font-size:16px;}
+.pos-unit{font-size:12px;color:var(--fg-faint);margin-left:-4px;}
+.pos-bank{font-family:var(--num);font-size:28px;font-weight:600;
+  font-variant-numeric:tabular-nums;margin-left:auto;}
+.pos-rest{font-size:13px;color:var(--fg-dim);margin-top:9px;}
 .next{flex:1 1 250px;min-width:200px;}
 .next-name{font-size:14px;font-weight:600;margin-bottom:6px;}
 .kv{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:2px 0;
@@ -109,11 +128,11 @@ select.in{font-family:inherit;}
 .seg button{background:transparent;color:var(--fg-dim);border:none;padding:11px 16px;
   font-size:14px;cursor:pointer;min-height:44px;}
 .seg button + button{border-left:1px solid var(--line);}
-.seg button[aria-pressed="true"]{background:var(--amber);color:#231604;font-weight:600;}
+.seg button[aria-pressed="true"]{background:var(--amber);color:var(--on-accent);font-weight:600;}
 .btn{background:var(--panel-2);color:var(--fg);border:1px solid var(--line);border-radius:6px;
   padding:11px 16px;font-size:14px;cursor:pointer;min-height:44px;}
 .btn:active{background:var(--line-soft);}
-.btn-primary{background:var(--amber);color:#231604;border-color:var(--amber);font-weight:600;}
+.btn-primary{background:var(--amber);color:var(--on-accent);border-color:var(--amber);font-weight:600;}
 .btn-sm{padding:8px 12px;font-size:13px;min-height:38px;}
 .btn-link{background:none;border:none;color:var(--cyan);cursor:pointer;font-size:13px;
   padding:6px 4px;min-height:32px;}
@@ -127,13 +146,21 @@ select.in{font-family:inherit;}
   background:var(--panel);transition:border-color .15s,background .15s;}
 .drop.over{border-color:var(--amber);background:var(--panel-2);}
 .drop p{margin:0 0 12px;color:var(--fg-dim);font-size:14px;}
+.drop p b{color:var(--fg);}
+.slot{margin-top:14px;padding:13px 14px;border:1px solid var(--line);border-radius:8px;
+  background:var(--panel-2);}
+.slot-title{font-size:13px;color:var(--fg-dim);margin-bottom:10px;}
+.slot-title b{color:var(--fg);}
+.slot-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.slot-name{font-size:13px;color:var(--fg-faint);word-break:break-all;flex:1 1 120px;}
+.slot-name.set{color:var(--green);}
 .drop-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
 
 /* コントロール一覧 */
 .ctrl{display:grid;grid-template-columns:38px 1fr auto;gap:0 12px;padding:14px 16px;
   border-top:1px solid var(--line-soft);align-items:start;}
 .ctrl:first-child{border-top:none;}
-.ctrl.done{background:rgba(110,211,154,.05);}
+.ctrl.done{background:var(--done-bg);}
 .ctrl.off{opacity:.42;}
 .seq{font-family:var(--num);font-size:13px;color:var(--fg-faint);padding-top:2px;
   font-variant-numeric:tabular-nums;}
@@ -154,11 +181,18 @@ select.in{font-family:inherit;}
 .edit-line input.dt{min-width:210px;}
 .day-tag{font-size:12px;color:var(--fg-faint);}
 .inline-warn{font-size:12px;color:var(--red);}
+.seg-info{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:10px;
+  padding-top:9px;border-top:1px dotted var(--line-soft);font-size:13px;color:var(--fg-dim);}
+.seg-info b{font-family:var(--num);font-size:15px;font-weight:600;color:var(--fg);
+  font-variant-numeric:tabular-nums;}
+.seg-label{color:var(--fg-faint);}
+.seg-unit{color:var(--fg-faint);font-size:12px;margin-left:-3px;}
+.seg-sep{color:var(--line);margin:0 4px;}
 
-.warn{background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.3);color:#F2CE8A;
+.warn{background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-fg);
   border-radius:6px;padding:11px 13px;font-size:13px;margin:13px 0;}
-.warn.info{background:rgba(99,196,214,.07);border-color:rgba(99,196,214,.28);color:#A8DCE6;}
-.err{background:rgba(255,107,94,.09);border:1px solid rgba(255,107,94,.35);color:#FFB3AB;
+.warn.info{background:var(--info-bg);border-color:var(--info-line);color:var(--info-fg);}
+.err{background:var(--err-bg);border:1px solid var(--err-line);color:var(--err-fg);
   border-radius:6px;padding:11px 13px;font-size:13px;margin:13px 0;}
 .note{font-size:12px;color:var(--fg-faint);margin-top:10px;}
 .empty{padding:30px 16px;text-align:center;color:var(--fg-faint);font-size:14px;}
@@ -174,6 +208,7 @@ select.in{font-family:inherit;}
 @media (max-width:620px){
   .wrap{padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r));}
   .bank-num{font-size:clamp(40px,13vw,56px);}
+  .bank-label{font-size:16px;}
   .cockpit{padding:14px 14px 12px;}
   .cockpit-grid{gap:14px 20px;}
   .next{flex-basis:100%;}
@@ -192,7 +227,7 @@ select.in{font-family:inherit;}
 
   <header class="head">
     <h1 class="title">ブルベ・タイムキーパー</h1>
-    <p class="sub">GPXのウェイポイントからPCの制限時刻を出し、貯金と到着予測を追う</p>
+    <p class="sub" id="course-totals">GPXを読み込むと総距離と獲得標高が出ます</p>
   </header>
 
   <div class="cockpit-slot">
@@ -212,6 +247,56 @@ select.in{font-family:inherit;}
     </div>
   </div>
 
+  
+
+  
+
+  <!-- 現在地点 -->
+  <section class="panel">
+    <div class="panel-head" data-toggle="p-pos" role="button" tabindex="0" aria-expanded="false" aria-controls="p-pos">
+      <h2>現在地点から計算 <span class="hint" id="h-pos"></span></h2>
+      <span class="chev">開く</span>
+    </div>
+    <div class="panel-body" id="p-pos" hidden>
+      <div class="pos-row">
+        <label class="pos-label" for="i-pos">走行距離</label>
+        <input id="i-pos" class="in pos-in" type="number" step="0.1" min="0"
+               inputmode="decimal" placeholder="距離" aria-label="現在地点の距離（km）">
+        <span class="pos-unit">km</span>
+        <span class="pos-bank idle" id="c-pos-bank">--:--</span>
+      </div>
+      <div class="pos-rest" id="c-pos-rest">距離を入れると、その地点の貯金と残りが出ます</div>
+    </div>
+  </section>
+
+  <!-- コントロール一覧 -->
+  <section class="panel">
+    <div class="panel-head" style="cursor:default">
+      <h2>コントロール <span class="hint" id="h-controls"></span></h2>
+    </div>
+    <div id="list-area"></div>
+  </section>
+
+  <!-- バックアップ -->
+  <section class="panel">
+    <div class="panel-head" data-toggle="p-backup" role="button" tabindex="0" aria-expanded="false" aria-controls="p-backup">
+      <h2>バックアップ <span class="hint">JSONの書き出しと読み込み</span></h2>
+      <span class="chev">開く</span>
+    </div>
+    <div class="panel-body" id="p-backup" hidden>
+      <p class="note" style="margin-top:12px">
+        コース・設定・通過記録をJSONファイルとして保存できます。端末を変えるときや、
+        ブラウザが保存領域を消してしまった場合の復旧に使ってください。
+      </p>
+      <div class="drop-actions" style="justify-content:flex-start;margin-top:14px">
+        <button class="btn" id="btn-export">JSONを書き出す</button>
+        <button class="btn" id="btn-import">JSONを読み込む</button>
+        <input type="file" id="file-json" accept=".json,application/json" hidden>
+      </div>
+      <div id="backup-msg"></div>
+    </div>
+  </section>
+
   <!-- コース -->
   <section class="panel">
     <div class="panel-head" data-toggle="p-course" role="button" tabindex="0" aria-expanded="true" aria-controls="p-course">
@@ -220,13 +305,28 @@ select.in{font-family:inherit;}
     </div>
     <div class="panel-body" id="p-course">
       <div class="drop" id="drop">
-        <p>GPXファイルをここにドロップ</p>
+        <p><b>コントロールGPX</b> — PCのウェイポイントに使います</p>
         <div class="drop-actions">
           <button class="btn btn-primary" id="btn-pick">ファイルを選ぶ</button>
-          <button class="btn" id="btn-sample">サンプルコースで試す</button>
+          <button class="btn" id="btn-sample">サンプルで試す</button>
         </div>
         <input type="file" id="file-gpx" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
       </div>
+
+      <div class="slot">
+        <div class="slot-title"><b>コースGPX</b> — 距離と獲得標高に使います（任意）</div>
+        <div class="slot-row">
+          <button class="btn btn-sm" id="btn-pick-ctrl">ファイルを選ぶ</button>
+          <span class="slot-name" id="ctrl-name">未指定</span>
+          <button class="btn-link" id="btn-clear-ctrl" hidden>解除</button>
+        </div>
+        <div class="note">
+          指定しない場合はコントロールGPXのトラックから距離と標高を計算します。
+          距離や獲得標高が正しいGPXが別にあるときに指定してください。
+        </div>
+        <input type="file" id="file-ctrl" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
+      </div>
+
       <div id="course-msg"></div>
     </div>
   </section>
@@ -290,40 +390,29 @@ select.in{font-family:inherit;}
       </div>
 
       <div class="field">
+        <span class="label">獲得標高の集計</span>
+        <div class="seg" id="seg-ele">
+          <button data-ele="auto">自動</button>
+          <button data-ele="course">コース</button>
+          <button data-ele="log">走行ログ</button>
+        </div>
+        <div class="note" id="ele-note"></div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="i-gaintotal">獲得標高の合計を手入力（m）— 空欄ならGPXの算出値</label>
+        <input id="i-gaintotal" class="in" type="number" min="0" step="10"
+               style="max-width:180px" inputmode="numeric" placeholder="自動">
+        <div class="note" id="gain-note"></div>
+      </div>
+
+      <div class="field">
         <label class="check">
           <input type="checkbox" id="i-nowmanual">
           現在時刻を手入力する（計画・検証用）
         </label>
         <input id="i-now" class="in" type="datetime-local" style="max-width:290px;margin-top:8px" hidden>
       </div>
-    </div>
-  </section>
-
-  <!-- コントロール一覧 -->
-  <section class="panel">
-    <div class="panel-head" style="cursor:default">
-      <h2>コントロール <span class="hint" id="h-controls"></span></h2>
-    </div>
-    <div id="list-area"></div>
-  </section>
-
-  <!-- バックアップ -->
-  <section class="panel">
-    <div class="panel-head" data-toggle="p-backup" role="button" tabindex="0" aria-expanded="false" aria-controls="p-backup">
-      <h2>バックアップ <span class="hint">JSONの書き出しと読み込み</span></h2>
-      <span class="chev">開く</span>
-    </div>
-    <div class="panel-body" id="p-backup" hidden>
-      <p class="note" style="margin-top:12px">
-        コース・設定・通過記録をJSONファイルとして保存できます。端末を変えるときや、
-        ブラウザが保存領域を消してしまった場合の復旧に使ってください。
-      </p>
-      <div class="drop-actions" style="justify-content:flex-start;margin-top:14px">
-        <button class="btn" id="btn-export">JSONを書き出す</button>
-        <button class="btn" id="btn-import">JSONを読み込む</button>
-        <input type="file" id="file-json" accept=".json,application/json" hidden>
-      </div>
-      <div id="backup-msg"></div>
     </div>
   </section>
 
@@ -388,7 +477,12 @@ function parseGpx(text){
     throw new Error("GPXのルート要素が見つかりません。");
   }
   function readPt(el){
-    return { lat: parseFloat(el.getAttribute("lat")), lon: parseFloat(el.getAttribute("lon")) };
+    var e = childText(el, "ele");
+    return {
+      lat: parseFloat(el.getAttribute("lat")),
+      lon: parseFloat(el.getAttribute("lon")),
+      ele: (e === "" ? null : parseFloat(e))
+    };
   }
   var track = tags(root, "trkpt").map(readPt);
   var trackSource = "trk";
@@ -413,27 +507,162 @@ function cumulative(track){
   return cum;
 }
 
+// 累積獲得標高。平滑化の幅Wと無視する上下の閾値THを指定する
+function cumulativeGain(track, W, TH){
+  var n = track.length, i, has = false;
+  for(i = 0; i < n; i++){
+    if(track[i].ele != null && isFinite(track[i].ele)){ has = true; break; }
+  }
+  if(!has || n < 2) return null;
+
+  // 欠損を前後の値で埋める
+  var ele = new Array(n), last = null;
+  for(i = 0; i < n; i++){
+    var v = track[i].ele;
+    if(v != null && isFinite(v)) last = v;
+    ele[i] = last;
+  }
+  for(i = n-1; i >= 0; i--){
+    if(ele[i] == null) ele[i] = (i+1 < n && ele[i+1] != null) ? ele[i+1] : 0;
+  }
+
+  // 移動平均で平滑化（W=0なら平滑化しない）
+  var sm;
+  if(W > 0){
+    sm = new Array(n);
+    for(i = 0; i < n; i++){
+      var acc = 0, c = 0;
+      for(var j = Math.max(0, i-W); j <= Math.min(n-1, i+W); j++){ acc += ele[j]; c++; }
+      sm[i] = acc / c;
+    }
+  }else{
+    sm = ele;
+  }
+
+  // TH未満の上下は無視して積算
+  var cum = [0], ref = sm[0], g = 0;
+  for(i = 1; i < n; i++){
+    var d = sm[i] - ref;
+    if(d > TH){ g += d; ref = sm[i]; }
+    else if(d < -TH){ ref = sm[i]; }
+    cum[i] = g;
+  }
+  return cum;
+}
+
 // ファイル順に単調増加を仮定してトラックへ射影（往復・周回対応）
-function projectWaypoints(track, cum, wpts){
+function projectWaypoints(track, cum, wpts, gainA, gainB){
   if(track.length < 2){
     var acc = 0;
     return wpts.map(function(w, i){
       if(i > 0) acc += haversine(wpts[i-1], w);
-      return { name:w.name, desc:w.desc, lat:w.lat, lon:w.lon, distM:acc, offTrackM:null };
+      return { name:w.name, desc:w.desc, lat:w.lat, lon:w.lon,
+               distM:acc, offTrackM:null, gainA:null, gainB:null };
     });
   }
   var searchStart = 0;
   return wpts.map(function(w){
-    var best = { d: Infinity, distM: 0, idx: searchStart };
+    var best = { d: Infinity, distM: 0, idx: searchStart, t: 0 };
     for(var i = searchStart; i < track.length - 1; i++){
       var r = pointToSegment(w, track[i], track[i+1]);
       if(r.dist < best.d){
-        best = { d:r.dist, distM: cum[i] + r.t*(cum[i+1]-cum[i]), idx:i };
+        best = { d:r.dist, distM: cum[i] + r.t*(cum[i+1]-cum[i]), idx:i, t:r.t };
       }
     }
     searchStart = best.idx;
-    return { name:w.name, desc:w.desc, lat:w.lat, lon:w.lon, distM:best.distM, offTrackM:best.d };
+    function at(gc){
+      if(!gc) return null;
+      var a = gc[best.idx], b = gc[best.idx+1];
+      return a + best.t * (b - a);
+    }
+    return { name:w.name, desc:w.desc, lat:w.lat, lon:w.lon,
+             distM:best.distM, offTrackM:best.d, gainA:at(gainA), gainB:at(gainB) };
   });
+}
+
+// 標高データの素性を判定する。実走ログはGPS誤差で上下の符号反転が頻発するが、
+// 計画コース（DEM由来）は滑らかなので反転が少ない。
+function detectEleType(track){
+  var prev = 0, rev = 0, cnt = 0;
+  for(var i = 1; i < track.length; i++){
+    var a = track[i-1].ele, b = track[i].ele;
+    if(a == null || b == null || !isFinite(a) || !isFinite(b)) continue;
+    var s = (b > a) ? 1 : (b < a ? -1 : 0);
+    if(s === 0) continue;
+    if(prev !== 0){ cnt++; if(s * prev === -1) rev++; }
+    prev = s;
+  }
+  var rate = cnt ? rev / cnt : 0;
+  return { type: (rate < 0.20 ? "course" : "log"), reversalRate: rate };
+}
+
+// 任意距離での獲得標高を引くための断面（距離km, 累積獲得標高m）
+function buildProfile(cum, gainA, gainB, N){
+  if(!cum || cum.length < 2) return null;
+  var total = cum[cum.length-1];
+  if(!(total > 0)) return null;
+  var prof = [], j = 0;
+  for(var k = 0; k <= N; k++){
+    var target = total * k / N;
+    while(j < cum.length - 2 && cum[j+1] < target) j++;
+    var a = cum[j], b = cum[j+1];
+    var t = (b > a) ? (target - a) / (b - a) : 0;
+    function pick(gc){
+      return gc ? Math.round(gc[j] + t * (gc[j+1] - gc[j])) : null;
+    }
+    prof.push([Math.round(target/1000*1000)/1000, pick(gainA), pick(gainB)]);
+  }
+  return prof;
+}
+
+// 集計方式・手入力補正をまとめて解決する
+function eleMode(){
+  if(S.eleMode === "course" || S.eleMode === "log") return S.eleMode;
+  return (S.parsed && S.parsed.eleAuto) ? S.parsed.eleAuto : "log";
+}
+function rawTotalGain(){
+  if(!S.parsed) return null;
+  return eleMode() === "course" ? S.parsed.totalGainA : S.parsed.totalGainB;
+}
+function eleScale(){
+  var ov = parseFloat(S.gainTotal);
+  var base = rawTotalGain();
+  if(isFinite(ov) && ov > 0 && base && base > 0) return ov / base;
+  return 1;
+}
+function totalGain(){
+  var b = rawTotalGain();
+  return (b == null) ? null : b * eleScale();
+}
+function wpGain(w){
+  if(!w) return null;
+  var g = eleMode() === "course" ? w.gainA : w.gainB;
+  return (g == null) ? null : g * eleScale();
+}
+
+// 断面を線形補間して任意距離の累積獲得標高を返す
+function gainAtKm(km){
+  var prof = S.parsed && S.parsed.profile;
+  if(!prof || !prof.length) return null;
+  var C = eleMode() === "course" ? 1 : 2;
+  if(prof[0][C] == null) return null;
+  var sc = eleScale();
+  if(km <= prof[0][0]) return prof[0][C] * sc;
+  var lastP = prof[prof.length-1];
+  if(km >= lastP[0]) return lastP[C] * sc;
+  var lo = 0, hi = prof.length - 1;
+  while(hi - lo > 1){
+    var mid = (lo + hi) >> 1;
+    if(prof[mid][0] <= km) lo = mid; else hi = mid;
+  }
+  var a = prof[lo], b = prof[hi];
+  var t = (b[0] > a[0]) ? (km - a[0]) / (b[0] - a[0]) : 0;
+  return (a[C] + t * (b[C] - a[C])) * sc;
+}
+
+function fmtM(m){
+  if(m == null || !isFinite(m)) return "—";
+  return Math.round(m).toLocaleString("ja-JP");
 }
 
 /* ===================== ACP 制限時間 ===================== */
@@ -531,8 +760,15 @@ function makeSampleGpx(){
   }
   var trk = [];
   for(var i = 0; i <= 600; i++){
-    var p = at(circ * i / 600);
-    trk.push('      <trkpt lat="' + p.lat.toFixed(6) + '" lon="' + p.lon.toFixed(6) + '"/>');
+    var km = circ * i / 600;
+    var p = at(km);
+    // 山を2つ含む標高プロファイル（微小なノイズ入り）
+    var ele = 60
+      + 320 * Math.max(0, Math.sin(Math.PI * (km - 20) / 70))
+      + 260 * Math.max(0, Math.sin(Math.PI * (km - 110) / 60))
+      + (i % 7 - 3) * 0.4;
+    trk.push('      <trkpt lat="' + p.lat.toFixed(6) + '" lon="' + p.lon.toFixed(6)
+           + '"><ele>' + ele.toFixed(1) + '</ele></trkpt>');
   }
   var marks = [[0,"スタート"],[48.2,"PC1 コンビニ多摩"],[96.5,"PC2 峠の茶屋"],
                [142.8,"PC3 河川敷公園"],[176.4,"通過チェック 旧道分岐"],[203.6,"ゴール"]];
@@ -559,6 +795,8 @@ function defaultStart(){
 
 var S = {
   gpxName: "",
+  courseSrc: null,
+  trackSrc: null,
   parsed: null,
   startStr: defaultStart(),
   mode: "acp",
@@ -570,7 +808,10 @@ var S = {
   disabled: {},
   passes: {},
   nowManual: false,
-  nowStr: toLocalInput(new Date())
+  nowStr: toLocalInput(new Date()),
+  posKm: "",
+  eleMode: "auto",
+  gainTotal: ""
 };
 
 var UI = { courseError: "", backupMsg: "", confirmReset: false, tickId: null };
@@ -578,7 +819,8 @@ var UI = { courseError: "", backupMsg: "", confirmReset: false, tickId: null };
 /* ===================== 保存（localStorage） ===================== */
 
 var STORE_KEY = "brevet.timekeeper.session";
-var STORE_VERSION = 1;
+var STORE_VERSION = 4;
+var STORE_ACCEPTS = [1, 2, 3, 4];
 var storageAvailable = (function(){
   try{
     var k = "__bk_test__";
@@ -593,29 +835,60 @@ function packSession(){
     v: STORE_VERSION,
     savedAt: new Date().toISOString(),
     gpxName: S.gpxName,
+    courseSrc: S.courseSrc,
+    trackSrc: S.trackSrc,
     parsed: S.parsed ? {
       wpts: S.parsed.wpts.map(function(w){
         return { name:w.name, desc:w.desc, lat:w.lat, lon:w.lon,
-                 distM:w.distM, offTrackM:w.offTrackM };
+                 distM:w.distM, offTrackM:w.offTrackM, gainA:w.gainA, gainB:w.gainB };
       }),
       totalKm: S.parsed.totalKm,
       trackSource: S.parsed.trackSource,
       hasTrack: S.parsed.hasTrack,
       trackPoints: S.parsed.trackPoints,
+      hasEle: S.parsed.hasEle,
+      totalGainA: S.parsed.totalGainA,
+      totalGainB: S.parsed.totalGainB,
+      autoAdded: S.parsed.autoAdded,
+      eleAuto: S.parsed.eleAuto,
+      eleReversal: S.parsed.eleReversal,
+      profile: S.parsed.profile,
       trackName: S.parsed.trackName
     } : null,
     startStr: S.startStr, mode: S.mode, customSpeed: S.customSpeed,
     brevetClass: S.brevetClass, predBasis: S.predBasis, assumedSpeed: S.assumedSpeed,
     overrides: S.overrides, disabled: S.disabled, passes: S.passes,
-    nowManual: S.nowManual, nowStr: S.nowStr
+    nowManual: S.nowManual, nowStr: S.nowStr, posKm: S.posKm,
+    eleMode: S.eleMode, gainTotal: S.gainTotal
   };
 }
 
 function isObj(o){ return o && typeof o === "object" && !Array.isArray(o); }
 
 function applySession(s){
-  if(!s || s.v !== STORE_VERSION) throw new Error("形式が違います");
-  if(s.parsed && Array.isArray(s.parsed.wpts)) S.parsed = s.parsed; else S.parsed = null;
+  if(!s || STORE_ACCEPTS.indexOf(s.v) === -1) throw new Error("形式が違います");
+  S.courseSrc = (s.courseSrc && s.courseSrc.ownWpts) ? s.courseSrc : null;
+  S.trackSrc = (s.trackSrc && s.trackSrc.simp) ? s.trackSrc : null;
+  if(s.parsed && Array.isArray(s.parsed.wpts)){
+    S.parsed = s.parsed;
+    // 旧形式には標高が無いので補う
+    S.parsed.wpts.forEach(function(w){
+      if(w.gainA === undefined) w.gainA = (w.gainM === undefined ? null : w.gainM);
+      if(w.gainB === undefined) w.gainB = (w.gainM === undefined ? null : w.gainM);
+    });
+    if(S.parsed.totalGainA === undefined) S.parsed.totalGainA = S.parsed.totalGainM;
+    if(S.parsed.totalGainB === undefined) S.parsed.totalGainB = S.parsed.totalGainM;
+    if(S.parsed.hasEle === undefined){
+      S.parsed.hasEle = S.parsed.totalGainA != null;
+    }
+    if(S.parsed.profile){
+      S.parsed.profile = S.parsed.profile.map(function(e){
+        return e.length >= 3 ? e : [e[0], e[1], e[1]];
+      });
+    }
+  }else{
+    S.parsed = null;
+  }
   if(typeof s.gpxName === "string") S.gpxName = s.gpxName;
   if(typeof s.startStr === "string" && s.startStr) S.startStr = s.startStr;
   if(s.mode === "acp" || s.mode === "custom") S.mode = s.mode;
@@ -628,6 +901,9 @@ function applySession(s){
   S.passes    = isObj(s.passes)    ? s.passes    : {};
   if(typeof s.nowManual === "boolean") S.nowManual = s.nowManual;
   if(typeof s.nowStr === "string" && s.nowStr) S.nowStr = s.nowStr;
+  S.posKm = (s.posKm === undefined || s.posKm === null) ? "" : String(s.posKm);
+  S.eleMode = (s.eleMode === "course" || s.eleMode === "log") ? s.eleMode : "auto";
+  S.gainTotal = (s.gainTotal === undefined || s.gainTotal === null) ? "" : String(s.gainTotal);
 }
 
 var saveTimer = null, saveState = "idle", savedAt = null;
@@ -694,7 +970,8 @@ function derived(){
         idx: i, name: w.name, desc: w.desc,
         km: isFinite(km) ? km : 0,
         overridden: (ov !== undefined && ov !== ""),
-        offTrackM: w.offTrackM
+        offTrackM: w.offTrackM,
+        gainM: wpGain(w)
       });
     });
   }
@@ -717,8 +994,10 @@ function derived(){
       return km / v;
     }
     var h = acpCloseHours(km);
-    // 総制限時間は実測距離ではなく認定距離で決まるので、ゴールは公式値で上書きする
-    if(isGoal && effClass !== "other" && OFFICIAL_LIMIT[effClass]){
+    // 総制限時間は実測距離ではなく認定距離で決まるので、ゴールは公式値で上書きする。
+    // ただし最終コントロールがコース末端から離れている場合はゴールではないので適用しない。
+    var atEnd = Math.abs(km - courseKm) < Math.max(2, courseKm * 0.02);
+    if(isGoal && atEnd && effClass !== "other" && OFFICIAL_LIMIT[effClass]){
       h = OFFICIAL_LIMIT[effClass];
     }
     return h;
@@ -733,12 +1012,21 @@ function derived(){
       var passedAt = S.passes[c.idx] ? new Date(S.passes[c.idx]) : null;
       return {
         idx:c.idx, name:c.name, desc:c.desc, km:c.km,
-        overridden:c.overridden, offTrackM:c.offTrackM, isGoal:isGoal,
+        overridden:c.overridden, offTrackM:c.offTrackM, gainM:c.gainM, isGoal:isGoal,
         closeH:closeH, openH:openH,
         closeAt: isFinite(closeH) ? new Date(startDate.getTime() + closeH*HOUR_MS) : null,
         openAt: isFinite(openH) ? new Date(startDate.getTime() + openH*HOUR_MS) : null,
         passedAt: passedAt
       };
+    });
+
+    // 次のコントロールまでの区間距離と獲得標高
+    rows.forEach(function(r, n){
+      var nx = rows[n+1];
+      r.nextName = nx ? nx.name : null;
+      r.nextKm = nx ? (nx.km - r.km) : null;
+      r.nextGainM = (nx && r.gainM != null && nx.gainM != null)
+        ? Math.max(0, nx.gainM - r.gainM) : null;
     });
   }
 
@@ -796,6 +1084,7 @@ function derived(){
     effClass:effClass, anchor:anchor, actualSpeed:actualSpeed, predSpeed:predSpeed,
     predIsActual: (S.predBasis === "actual" && !!actualSpeed),
     nextRow:nextRow, totalLimitH:totalLimitH, lastBank:lastBank,
+    closeHoursFor:closeHoursFor,
     estKm:estKm, estBankH:estBankH,
     elapsedH: startDate ? (now - startDate)/HOUR_MS : 0
   };
@@ -814,8 +1103,50 @@ var $ = function(id){ return document.getElementById(id); };
 function renderCockpit(){
   var D = derived();
 
-  $("c-bank-label").textContent = (D.anchor && D.anchor.row)
-    ? D.anchor.row.name + " 通過時点の貯金" : "貯金";
+  // タイトル下の総距離・獲得標高
+  var tot = $("course-totals");
+  if(S.parsed){
+    var g = totalGain();
+    tot.textContent = "全長 " + D.courseKm.toFixed(1) + " km"
+      + (g != null ? " ・ 獲得標高 " + fmtM(g) + " m" : " ・ 標高データなし");
+  }else{
+    tot.textContent = "GPXを読み込むと総距離と獲得標高が出ます";
+  }
+
+  // 任意距離を入れたときの貯金と残り
+  var pb = $("c-pos-bank"), pr = $("c-pos-rest");
+  var pos = parseFloat(S.posKm);
+  if(S.parsed && D.startDate && isFinite(pos) && pos >= 0){
+    var ch = D.closeHoursFor(pos, false);
+    if(isFinite(ch)){
+      var bankH = (D.startDate.getTime() + ch*HOUR_MS - D.now.getTime())/HOUR_MS;
+      pb.className = "pos-bank " + bankClass(bankH);
+      pb.textContent = fmtSigned(bankH);
+    }else{
+      pb.className = "pos-bank idle"; pb.textContent = "--:--";
+    }
+    var restKm = Math.max(0, D.courseKm - pos);
+    var restGain = null;
+    var tg = totalGain();
+    if(tg != null){
+      var gHere = gainAtKm(pos);
+      if(gHere != null) restGain = Math.max(0, tg - gHere);
+    }
+    pr.textContent = "残り " + restKm.toFixed(1) + " km ・ 獲得標高 "
+      + (restGain != null ? fmtM(restGain) + " m" : "—");
+    $("h-pos").textContent = pos.toFixed(1) + " km ・ " + pb.textContent;
+  }else{
+    pb.className = "pos-bank idle";
+    pb.textContent = "--:--";
+    pr.textContent = S.parsed ? "距離を入れると、その地点の貯金と残りが出ます"
+                              : "GPXを読み込むと使えます";
+    $("h-pos").textContent = "";
+  }
+
+  var lab = $("c-bank-label");
+  lab.innerHTML = (D.anchor && D.anchor.row)
+    ? '<span class="bank-loc">' + esc(D.anchor.row.name) + '</span> 通過時点の貯金'
+    : '貯金';
   var num = $("c-bank-num");
   num.className = "bank-num " + bankClass(D.lastBank);
   num.textContent = D.lastBank !== null ? fmtSigned(D.lastBank) : "--:--";
@@ -832,11 +1163,7 @@ function renderCockpit(){
       '<div class="next-name">次 ▸ ' + esc(r.name) + '（' + r.km.toFixed(1) + ' km）</div>'
       + kvRow("クローズ", fmtClock(r.closeAt, D.startDate), "")
       + kvRow("クローズまで", fmtDur(untilH), untilH < 0 ? "neg" : "")
-      + kvRow("到着予測", fmtClock(r.eta, D.startDate), "")
-      + kvRow("予測の余裕", fmtSigned(r.predMarginH), bankClass(r.predMarginH))
-      + kvRow("推定現在地点の貯金",
-          fmtSigned(D.estBankH) + '<span class="sm">' + (D.estKm !== null ? D.estKm.toFixed(1) + "km" : "") + '</span>',
-          bankClass(D.estBankH));
+      + kvRow("到着予測", fmtClock(r.eta, D.startDate), "");
   }else if(D.rows.length){
     nx.innerHTML = '<div class="next-name">全PC通過済み</div>';
   }else{
@@ -870,12 +1197,40 @@ function renderCourseMsg(){
   var el = $("course-msg");
   var html = "";
   if(UI.courseError) html += '<div class="err">' + esc(UI.courseError) + '</div>';
+  var cn = $("ctrl-name"), cb = $("btn-clear-ctrl");
+  if(S.trackSrc){
+    cn.textContent = S.trackSrc.name + "（" + S.trackSrc.totalKm.toFixed(1) + " km）";
+    cn.className = "slot-name set";
+    cb.hidden = false;
+  }else{
+    cn.textContent = S.courseSrc ? "未指定（コントロールGPXのトラックを使用中）" : "未指定";
+    cn.className = "slot-name";
+    cb.hidden = true;
+  }
+
   if(S.parsed){
     var p = S.parsed;
-    html += '<div class="note">ウェイポイント ' + p.wpts.length + ' 点 / トラック '
-          + (p.hasTrack ? p.trackPoints + " 点" : "なし") + ' / 総距離 '
-          + p.totalKm.toFixed(1) + ' km'
-          + (p.trackSource === "rte" ? "（rteを距離計算に使用）" : "") + '</div>';
+    html += '<div class="note">コントロール: ' + esc(S.courseSrc ? S.courseSrc.name : "—")
+          + ' ／ ' + p.wpts.length + ' 点'
+          + '<br>距離・標高: ' + esc(S.trackSrc ? S.trackSrc.name : "コントロールGPXと同じ")
+          + ' ／ トラック ' + p.trackPoints + ' 点 ／ 総距離 ' + p.totalKm.toFixed(1) + ' km'
+          + (p.trackSource === "rte" ? "（rteを使用）" : "") + '</div>';
+
+    // 2つのGPXが別コースだと射影が破綻するので検知する
+    var maxOff = 0;
+    p.wpts.forEach(function(w){
+      if(w.offTrackM != null && w.offTrackM > maxOff) maxOff = w.offTrackM;
+    });
+    if(S.trackSrc && maxOff > 1000){
+      html += '<div class="err">コントロールGPXのウェイポイントがコースGPXのトラックから最大 '
+            + Math.round(maxOff) + ' m 離れています。'
+            + '2つのGPXが別のコースの可能性があります。距離の割り当ては信用できません。</div>';
+    }
+    if(p.autoAdded && p.autoAdded.length){
+      html += '<div class="warn info">GPXに' + esc(p.autoAdded.join("と"))
+            + 'のウェイポイントが無かったため、コースの端点を自動で追加しました。'
+            + '不要なら一覧の「PCから外す」で外せます。</div>';
+    }
     if(!p.hasTrack){
       html += '<div class="warn">トラックが無いため、ウェイポイント間の直線距離を積算しています。'
             + '実距離とは大きくずれます。各PCの距離を公式値で上書きしてください。</div>';
@@ -931,9 +1286,30 @@ function renderConfig(){
   }
   $("pred-note").textContent = note;
 
+  Array.prototype.forEach.call($("seg-ele").children, function(b){
+    b.setAttribute("aria-pressed", b.dataset.ele === S.eleMode ? "true" : "false");
+  });
+  var en = $("ele-note");
+  if(S.parsed && S.parsed.hasEle){
+    var auto = S.parsed.eleAuto === "course" ? "コース" : "走行ログ";
+    var rev = S.parsed.eleReversal;
+    var raw = rawTotalGain();
+    en.textContent = "自動判定は「" + auto + "」"
+      + (rev != null ? "（標高の上下の反転 " + (rev*100).toFixed(0) + "%）" : "")
+      + " ・ 現在の集計値 " + fmtM(raw) + " m";
+  }else{
+    en.textContent = S.parsed ? "このGPXには標高が入っていません。" : "GPXを読み込むと判定結果が出ます。";
+  }
+  if(document.activeElement !== $("i-gaintotal")) $("i-gaintotal").value = S.gainTotal;
+  var sc = eleScale();
+  $("gain-note").textContent = (sc !== 1)
+    ? "区間ごとの獲得標高を " + sc.toFixed(2) + " 倍して表示しています"
+    : "国土地理院などの値に合わせたいときに入力してください";
+
   $("i-nowmanual").checked = S.nowManual;
   $("i-now").hidden = !S.nowManual;
   if(document.activeElement !== $("i-now")) $("i-now").value = S.nowStr;
+  if(document.activeElement !== $("i-pos")) $("i-pos").value = S.posKm;
 }
 
 // コントロール一覧
@@ -966,22 +1342,21 @@ function renderList(){
 
     html += '<div class="ctrl-main">';
     html += '<div class="ctrl-name">' + esc(w.name) + '</div>';
-    var meta = r ? r.km.toFixed(1) + " km" : "対象外";
-    if(r && r.overridden) meta += " ・手入力";
-    if(w.offTrackM != null && w.offTrackM > 300) meta += " ・コースから" + Math.round(w.offTrackM) + "m";
-    if(w.desc) meta += " ・" + w.desc;
-    html += '<div class="ctrl-meta">' + esc(meta) + '</div>';
+
+    var bits = [];
+    if(!r) bits.push("対象外");
+    if(r && r.overridden) bits.push("距離は手入力");
+    if(w.offTrackM != null && w.offTrackM > 300) bits.push("コースから" + Math.round(w.offTrackM) + "m");
+    if(w.desc) bits.push(w.desc);
+    if(bits.length) html += '<div class="ctrl-meta">' + esc(bits.join(" ・ ")) + '</div>';
 
     if(r){
       html += '<div class="times">';
-      if(S.mode === "acp"){
-        html += '<div class="time"><i>オープン</i><b style="color:var(--cyan)">'
-              + fmtClock(r.openAt, D.startDate) + '</b></div>';
-      }
       html += '<div class="time"><i>クローズ</i><b>' + fmtClock(r.closeAt, D.startDate) + '</b></div>';
-      html += '<div class="time"><i>' + (r.passedAt ? "通過" : "到着予測") + '</i><b style="color:'
-            + (r.passedAt ? "var(--green)" : "var(--fg-dim)") + '">'
-            + fmtClock(r.passedAt ? r.passedAt : r.eta, D.startDate) + '</b></div>';
+      if(!r.passedAt){
+        html += '<div class="time"><i>到着予測</i><b style="color:var(--fg-dim)">'
+              + fmtClock(r.eta, D.startDate) + '</b></div>';
+      }
       html += '</div>';
 
       var kmVal = (S.overrides[i] !== undefined) ? S.overrides[i] : (w.distM/1000).toFixed(1);
@@ -1002,6 +1377,17 @@ function renderList(){
               + '<span class="day-tag">' + esc(dayOffsetLabel(r.passedAt, D.startDate)) + '</span>'
               + '<button class="btn-link" data-act="clear-pass" data-i="' + i + '">記録を消す</button>'
               + (r.beforeStart ? '<span class="inline-warn">スタートより前の日時です（ペース計算から除外中）</span>' : "")
+              + '</div>';
+      }
+
+      if(r.nextName){
+        html += '<div class="seg-info">'
+              + '<span class="seg-label">次まで</span>'
+              + '<b>' + r.nextKm.toFixed(1) + '</b><span class="seg-unit">km</span>'
+              + '<span class="seg-sep">/</span>'
+              + '<span class="seg-label">獲得標高</span>'
+              + '<b>' + (r.nextGainM != null ? Math.round(r.nextGainM) : "—") + '</b>'
+              + '<span class="seg-unit">m</span>'
               + '</div>';
       }
     }
@@ -1075,29 +1461,142 @@ function update(){ renderAll(); scheduleSave(); }
 
 /* ===================== 読み込み ===================== */
 
-function loadGpxText(text, name){
+// 射影用に間引いたトラック [lat, lon, 累積m, 累積標高A, 累積標高B]
+function simplifyTrack(track, cum, gainA, gainB, maxPts){
+  var n = track.length, step = Math.max(1, Math.ceil(n / maxPts)), out = [], i;
+  function push(i){
+    out.push([
+      Math.round(track[i].lat * 1e5) / 1e5,
+      Math.round(track[i].lon * 1e5) / 1e5,
+      Math.round(cum[i]),
+      gainA ? Math.round(gainA[i] * 10) / 10 : null,
+      gainB ? Math.round(gainB[i] * 10) / 10 : null
+    ]);
+  }
+  for(i = 0; i < n; i += step) push(i);
+  if((n - 1) % step !== 0) push(n - 1);
+  return out;
+}
+
+// GPXを解析して距離・標高・ウェイポイントを一式そろえる
+function parseCourseData(text, name){
+  var g = parseGpx(text);
+  var hasTrack = g.track.length > 1;
+  var cum = hasTrack ? cumulative(g.track) : null;
+  // コースデータ用（ほぼ生値）と実走ログ用（ノイズ除去）を両方作る
+  var gainA = hasTrack ? cumulativeGain(g.track, 0, 0.1) : null;
+  var gainB = hasTrack ? cumulativeGain(g.track, 2, 3) : null;
+  var det = hasTrack ? detectEleType(g.track) : null;
+  return {
+    name: name,
+    trackName: g.trackName || name,
+    trackSource: g.trackSource,
+    trackPoints: g.track.length,
+    totalKm: hasTrack ? cum[cum.length-1] / 1000 : 0,
+    hasEle: !!gainA,
+    totalGainA: gainA ? gainA[gainA.length-1] : null,
+    totalGainB: gainB ? gainB[gainB.length-1] : null,
+    eleAuto: det ? det.type : null,
+    eleReversal: det ? det.reversalRate : null,
+    profile: hasTrack ? buildProfile(cum, gainA, gainB, 300) : null,
+    simp: hasTrack ? simplifyTrack(g.track, cum, gainA, gainB, 8000) : null,
+    ownWpts: g.wpts.map(function(w){
+      return { name:w.name, desc:w.desc, lat:w.lat, lon:w.lon };
+    })
+  };
+}
+
+// コントロールGPX（メイン）— ウェイポイントの供給元。トラックがあれば距離・標高にも使う
+function loadCourseGpx(text, name){
   try{
-    var g = parseGpx(text);
-    if(g.wpts.length === 0){
-      throw new Error("ウェイポイント（<wpt>）がありません。PCの位置がウェイポイントとして入ったGPXを読み込んでください。");
+    var d = parseCourseData(text, name);
+    if(d.ownWpts.length === 0){
+      throw new Error("ウェイポイント（<wpt>）がありません。PCが入ったGPXを読み込んでください。");
     }
-    var cum = g.track.length > 1 ? cumulative(g.track) : [];
-    var placed = projectWaypoints(g.track, cum, g.wpts);
-    var totalKm = g.track.length > 1 ? cum[cum.length-1]/1000 : placed[placed.length-1].distM/1000;
-    S.parsed = {
-      wpts: placed, totalKm: totalKm, trackSource: g.trackSource,
-      hasTrack: g.track.length > 1, trackPoints: g.track.length,
-      trackName: g.trackName || name
-    };
-    S.gpxName = name;
+    S.courseSrc = d;
     S.overrides = {}; S.disabled = {}; S.passes = {};
     S.brevetClass = "auto";
     UI.courseError = "";
+    rebuildCourse();
   }catch(e){
-    S.parsed = null;
-    UI.courseError = e.message || "読み込みに失敗しました。";
+    UI.courseError = e.message || "コントロールGPXの読み込みに失敗しました。";
   }
   update();
+}
+
+// コースGPX（サブ）— 距離と獲得標高だけを差し替える
+function loadTrackGpx(text, name){
+  try{
+    var d = parseCourseData(text, name);
+    if(!d.simp || d.simp.length < 2){
+      throw new Error("トラック（<trkpt>／<rtept>）が入っていません。距離と標高の計算に使えるGPXを読み込んでください。");
+    }
+    S.trackSrc = d;
+    UI.courseError = "";
+    rebuildCourse();
+  }catch(e){
+    UI.courseError = e.message || "コースGPXの読み込みに失敗しました。";
+  }
+  update();
+}
+
+function clearTrackGpx(){
+  S.trackSrc = null;
+  rebuildCourse();
+  update();
+}
+
+// コースとコントロールを突き合わせて S.parsed を作り直す
+function rebuildCourse(){
+  var geo  = S.trackSrc || S.courseSrc;          // 距離・獲得標高の供給元
+  var wsrc = S.courseSrc || S.trackSrc;          // ウェイポイントの供給元
+  if(!geo || !geo.simp || geo.simp.length < 2){
+    S.parsed = null;
+    if(S.courseSrc && !S.trackSrc){
+      UI.courseError = "このGPXにはトラックが入っていないため距離を計算できません。"
+        + "コースGPXを追加で指定してください。";
+    }
+    return;
+  }
+
+  var track = geo.simp.map(function(p){ return { lat:p[0], lon:p[1] }; });
+  var cum   = geo.simp.map(function(p){ return p[2]; });
+  var gainA = geo.hasEle ? geo.simp.map(function(p){ return p[3]; }) : null;
+  var gainB = geo.hasEle ? geo.simp.map(function(p){ return p[4]; }) : null;
+
+  var src = (wsrc && wsrc.ownWpts.length) ? wsrc.ownWpts : [];
+  var placed = projectWaypoints(track, cum, src, gainA, gainB);
+
+  // GPXにスタート／ゴールのウェイポイントが無いことは多い。無ければ端点を補う。
+  var autoAdded = [];
+  var totalM = cum[cum.length-1], L = track.length - 1;
+  var near = function(m){
+    return placed.some(function(w){ return Math.abs(w.distM - m) < 1500; });
+  };
+  var mk = function(nm, i){
+    return { name:nm, desc:"GPXに無いため自動追加", lat:track[i].lat, lon:track[i].lon,
+             distM:cum[i], offTrackM:0,
+             gainA: gainA ? gainA[i] : null, gainB: gainB ? gainB[i] : null, auto:true };
+  };
+  if(!near(0)){ placed.unshift(mk("スタート", 0)); autoAdded.push("スタート"); }
+  if(!near(totalM)){ placed.push(mk("ゴール", L)); autoAdded.push("ゴール"); }
+
+  S.parsed = {
+    wpts: placed,
+    totalKm: geo.totalKm,
+    trackSource: geo.trackSource,
+    hasTrack: true,
+    trackPoints: geo.trackPoints,
+    hasEle: geo.hasEle,
+    totalGainA: geo.totalGainA,
+    totalGainB: geo.totalGainB,
+    autoAdded: autoAdded,
+    eleAuto: geo.eleAuto,
+    eleReversal: geo.eleReversal,
+    profile: geo.profile,
+    trackName: geo.trackName
+  };
+  S.gpxName = (S.courseSrc || geo).name;
 }
 
 function readFile(file, done){
@@ -1107,6 +1606,7 @@ function readFile(file, done){
   fr.onerror = function(){ UI.courseError = "ファイルを読めませんでした。"; update(); };
   fr.readAsText(file);
 }
+
 
 /* ===================== バックアップ ===================== */
 
@@ -1133,6 +1633,7 @@ function exportJson(){
 function importJson(text){
   try{
     applySession(JSON.parse(text));
+    if(S.courseSrc) rebuildCourse();
     UI.backupMsg = { type:"info", text:"読み込みました。" };
     UI.courseError = "";
   }catch(e){
@@ -1148,11 +1649,12 @@ function clearPass(i){ delete S.passes[i]; update(); }
 
 function resetAll(){
   try{ if(storageAvailable) window.localStorage.removeItem(STORE_KEY); }catch(e){}
-  S.parsed = null; S.gpxName = "";
+  S.parsed = null; S.gpxName = ""; S.courseSrc = null; S.trackSrc = null;
   S.overrides = {}; S.disabled = {}; S.passes = {};
   S.mode = "acp"; S.customSpeed = "15"; S.brevetClass = "auto";
   S.predBasis = "actual"; S.assumedSpeed = "20";
-  S.nowManual = false; S.startStr = defaultStart();
+  S.nowManual = false; S.startStr = defaultStart(); S.posKm = "";
+  S.eleMode = "auto"; S.gainTotal = "";
   UI.courseError = ""; UI.confirmReset = false; UI.backupMsg = "";
   savedAt = null;
   renderAll();
@@ -1216,6 +1718,7 @@ document.addEventListener("input", function(e){
 
 // 設定
 $("i-start").addEventListener("input", function(){ S.startStr = this.value; update(); });
+$("i-pos").addEventListener("input", function(){ S.posKm = this.value; update(); });
 $("i-speed").addEventListener("input", function(){ S.customSpeed = this.value; update(); });
 $("i-assumed").addEventListener("input", function(){ S.assumedSpeed = this.value; update(); });
 $("i-class").addEventListener("change", function(){ S.brevetClass = this.value; update(); });
@@ -1231,6 +1734,12 @@ $("seg-mode").addEventListener("click", function(e){
   if(!b) return;
   S.mode = b.dataset.mode; update();
 });
+$("i-gaintotal").addEventListener("input", function(){ S.gainTotal = this.value; update(); });
+$("seg-ele").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-ele]");
+  if(!b) return;
+  S.eleMode = b.dataset.ele; update();
+});
 $("seg-pred").addEventListener("click", function(e){
   var b = e.target.closest("button[data-pred]");
   if(!b) return;
@@ -1240,11 +1749,17 @@ $("seg-pred").addEventListener("click", function(e){
 // ファイル
 $("btn-pick").addEventListener("click", function(){ $("file-gpx").click(); });
 $("file-gpx").addEventListener("change", function(){
-  readFile(this.files[0], loadGpxText);
+  readFile(this.files[0], loadCourseGpx);
   this.value = "";
 });
+$("btn-pick-ctrl").addEventListener("click", function(){ $("file-ctrl").click(); });
+$("file-ctrl").addEventListener("change", function(){
+  readFile(this.files[0], loadTrackGpx);
+  this.value = "";
+});
+$("btn-clear-ctrl").addEventListener("click", clearTrackGpx);
 $("btn-sample").addEventListener("click", function(){
-  loadGpxText(makeSampleGpx(), "サンプル 200km 周回コース");
+  loadCourseGpx(makeSampleGpx(), "サンプル 200km 周回コース");
 });
 
 var drop = $("drop");
@@ -1255,7 +1770,7 @@ var drop = $("drop");
   drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("over"); });
 });
 drop.addEventListener("drop", function(e){
-  if(e.dataTransfer && e.dataTransfer.files) readFile(e.dataTransfer.files[0], loadGpxText);
+  if(e.dataTransfer && e.dataTransfer.files) readFile(e.dataTransfer.files[0], loadCourseGpx);
 });
 
 // バックアップ
@@ -1270,6 +1785,7 @@ $("file-json").addEventListener("change", function(){
 
 (function init(){
   var restored = loadSaved();
+  if(S.courseSrc) rebuildCourse();
   renderAll();
   setSaveState(storageAvailable ? (restored ? "saved" : "idle") : "error");
   if(restored) $("save-text").textContent = "前回の内容を読み込みました";
